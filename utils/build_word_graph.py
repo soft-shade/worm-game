@@ -16,15 +16,21 @@ Output format (matches assets/word_graph.txt pre-shortened version):
     Neighbors are sorted ascending. No trailing newline on the file.
 """
 import sys
+import unicodedata
 from collections import defaultdict
+
+
+def strip_accents(s):
+    nfkd = unicodedata.normalize("NFKD", s)
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
 
 
 def read_wordlist(path):
     with open(path) as f:
         out = set()
         for line in f:
-            w = line.strip().lower()
-            if w and w.isalpha():
+            w = strip_accents(line.strip().lower())
+            if w and w.isalpha() and w.isascii():
                 out.add(w)
         return out
 
