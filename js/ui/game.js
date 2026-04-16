@@ -301,6 +301,24 @@ class Game extends Phaser.Scene {
 	// Add input box
 	this.input_box = this.add.dom(INPUT_BOX_X, INPUT_BOX_Y).createFromCache("form");
 	this.input_box.setOrigin(0.5,0.5);
+
+	// Restrict the text field to basic English letters: block typing of
+	// non-[a-zA-Z], block paste / drag-drop, and strip anything that
+	// still slips through (composition events, IME, etc.).
+	const inp = this.input_box.getChildByName("input_word");
+	inp.addEventListener('beforeinput', function (e) {
+	    if (e.inputType === 'insertFromPaste' || e.inputType === 'insertFromDrop') {
+		e.preventDefault();
+		return;
+	    }
+	    if (e.data && !/^[a-zA-Z]+$/.test(e.data)) {
+		e.preventDefault();
+	    }
+	});
+	inp.addEventListener('input', function (e) {
+	    const cleaned = e.target.value.replace(/[^a-zA-Z]/g, '');
+	    if (cleaned !== e.target.value) e.target.value = cleaned;
+	});
 	
 	// Add scroll panel for word_history
 	var graphics = this.make.graphics();
@@ -376,12 +394,16 @@ class Game extends Phaser.Scene {
 	return container;
     }
 
-    // Load game mode buttons (with bubble boxes)
+    // Load game mode buttons (with bubble boxes). Daily Puzzle is
+    // rendered at full size; the side buttons are ~10% smaller so
+    // Daily visually stands out as the primary option.
     load_gamemodes() {
 	const PAD_X = 18, PAD_Y = 10;
+	const SIDE_FONT = Math.round(WORD_FONTSIZE * 0.9);
+	const SIDE_PAD_X = Math.round(PAD_X * 0.9), SIDE_PAD_Y = Math.round(PAD_Y * 0.9);
 
 	// Practice — endless play with random word pairs
-	this.regular = this.add_button(GMODE1_X, GMODE1_Y, "PRACTICE", WORD_FONTSIZE, COLOR_RED, 0, 0, PAD_X, PAD_Y);
+	this.regular = this.add_button(GMODE1_X, GMODE1_Y, "PRACTICE", SIDE_FONT, COLOR_RED, 0, 0, SIDE_PAD_X, SIDE_PAD_Y);
 	this.regular.zone.on('pointerdown', () => {
 	    this.generate_puzzle();
 	    this.set_active_mode('practice');
@@ -399,7 +421,7 @@ class Game extends Phaser.Scene {
 	});
 
 	// Free play — user enters start and goal words
-	this.free_play = this.add_button(GMODE3_X, GMODE3_Y, "FREE PLAY", WORD_FONTSIZE, COLOR_RED, 1, 0, PAD_X, PAD_Y);
+	this.free_play = this.add_button(GMODE3_X, GMODE3_Y, "FREE PLAY", SIDE_FONT, COLOR_RED, 1, 0, SIDE_PAD_X, SIDE_PAD_Y);
 	this.free_play.zone.on('pointerdown', () => {
 	    this.start_word = "???";
 	    this.goal_word.setText("???");
