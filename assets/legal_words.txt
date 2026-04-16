@@ -11295,6 +11295,7 @@ badness
 badnesses
 bads
 bae
+baes
 baff
 baffed
 baffies
@@ -14338,6 +14339,7 @@ bestially
 bestiaries
 bestiary
 bestie
+besties
 besting
 bestir
 bestirred
@@ -20742,6 +20744,8 @@ buzzed
 buzzer
 buzzers
 buzzes
+buzzier
+buzziest
 buzzing
 buzzingly
 buzzkill
@@ -25662,6 +25666,8 @@ cheth
 cheths
 chetrum
 chetrums
+cheugier
+cheugiest
 cheugy
 chevalet
 chevalets
@@ -63205,6 +63211,7 @@ gaskings
 gaskins
 gasless
 gaslight
+gaslighted
 gaslighting
 gaslights
 gaslit
@@ -65262,6 +65269,7 @@ glowing
 glowingly
 glows
 glowup
+glowups
 glowworm
 glowworms
 gloxinia
@@ -69131,6 +69139,8 @@ hangout
 hangouts
 hangover
 hangovers
+hangrier
+hangriest
 hangry
 hangs
 hangtag
@@ -91484,9 +91494,13 @@ manslaughters
 manslayer
 manslayers
 mansplain
+mansplained
 mansplaining
+mansplains
 manspread
+manspreaded
 manspreading
+manspreads
 mansuetude
 mansuetudes
 manta
@@ -142404,6 +142418,7 @@ sextant
 sextants
 sextarii
 sextarius
+sexted
 sextet
 sextets
 sextette
@@ -144141,6 +144156,9 @@ sidednesses
 sidedress
 sidedresses
 sideeye
+sideeyed
+sideeyes
+sideeying
 sidehill
 sidehills
 sidekick
@@ -144619,12 +144637,14 @@ simoon
 simoons
 simp
 simpatico
+simped
 simper
 simpered
 simperer
 simperers
 simpering
 simpers
+simping
 simple
 simpleminded
 simplemindedly
@@ -144953,6 +144973,7 @@ situational
 situationally
 situations
 situationship
+situationships
 situp
 situps
 situs
@@ -145685,6 +145706,7 @@ sleazoid
 sleazoids
 sleazy
 sleb
+slebs
 sled
 sledded
 sledder
@@ -146656,10 +146678,12 @@ snarfing
 snarfs
 snaring
 snark
+snarked
 snarkier
 snarkiest
 snarkily
 snarkiness
+snarking
 snarks
 snarky
 snarl
@@ -150738,7 +150762,9 @@ stank
 stanks
 stannaries
 stannary
+stanned
 stannic
+stanning
 stannite
 stannites
 stannous
@@ -153777,6 +153803,7 @@ subrace
 subraces
 subrational
 subreddit
+subreddits
 subregion
 subregional
 subregions
@@ -168394,6 +168421,7 @@ unfolds
 unfollow
 unfollowed
 unfollowing
+unfollows
 unfond
 unforced
 unforeseeable
@@ -169283,6 +169311,9 @@ unmuffles
 unmuffling
 unmusical
 unmute
+unmuted
+unmutes
+unmuting
 unmuzzle
 unmuzzled
 unmuzzles
@@ -171034,6 +171065,7 @@ upturns
 upvote
 upvoted
 upvotes
+upvoting
 upwaft
 upwafted
 upwafting
