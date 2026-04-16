@@ -7,4 +7,10 @@ var config = {
     scene: [ Boot, Game, Intro ]
 };
 
-var game = new Phaser.Game(config);
+function startGame() { new Phaser.Game(config); }
+
+if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(startGame);
+} else {
+    startGame();
+}

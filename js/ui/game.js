@@ -68,7 +68,7 @@ class Game extends Phaser.Scene {
     // Add a text element with some default settings
     add_text(x, y, text_str, fontsize, color = "#FFFFFF") {
 	let new_text = this.add.text(x, y, text_str,
-				     { fontSize: fontsize, fontFamily: "monospace", color: color}).setResolution(RESOLUTION);
+				     { fontSize: fontsize, fontFamily: "'JetBrains Mono', monospace", color: color}).setResolution(RESOLUTION);
 	new_text.setOrigin(0.5,0.5);
 	return new_text;
     }
