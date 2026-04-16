@@ -4,7 +4,7 @@ const WINDOW_HEIGHT = 640;
 const HISTORY_BOX_W = WINDOW_WIDTH*6/10
 const HISTORY_BOX_X = WINDOW_WIDTH*5/10 - HISTORY_BOX_W/2
 const HISTORY_BOX_H = WINDOW_HEIGHT*6/10
-const HISTORY_BOX_Y = WINDOW_HEIGHT*4/10 - HISTORY_BOX_H/2
+const HISTORY_BOX_Y = WINDOW_HEIGHT*4/10 - HISTORY_BOX_H/2 + 10
 const HISTORY_BOX_FONTSIZE = 24
 
 const INPUT_BOX_X = WINDOW_WIDTH *5/10;
@@ -25,13 +25,13 @@ const GOAL_WORD_Y = PREV_WORD_Y;
 // Bottom row buttons sit above the input field, with enough vertical
 // separation that their outlined/shadowed boxes don't overlap.
 const RESET_X = WINDOW_WIDTH * 0.5/10
-const RESET_Y = WINDOW_HEIGHT * 8.95/10
+const RESET_Y = WINDOW_HEIGHT * 8.88/10
 
 const RESTART_X = WINDOW_WIDTH * 0.5/10
 const RESTART_Y = WINDOW_HEIGHT * 9.5/10
 
 const SOLUTION_X = WINDOW_WIDTH * 9.5/10
-const SOLUTION_Y = WINDOW_HEIGHT * 8.95/10
+const SOLUTION_Y = WINDOW_HEIGHT * 8.88/10
 
 const SOUND_TOGGLE_X = WINDOW_WIDTH * 9.5/10
 const SOUND_TOGGLE_Y = WINDOW_HEIGHT * 9.5/10
