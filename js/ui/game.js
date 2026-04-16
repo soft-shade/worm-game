@@ -23,8 +23,8 @@ class Game extends Phaser.Scene {
 	this.complaint_counter;
 	this.freeplay_stage;
 	
-	this.sound_toggle;
-	this.bgm;
+	this.rules_button;
+	this.rules_modal;
 	this.reset;
 	this.restart;
 	this.solved;
@@ -54,10 +54,6 @@ class Game extends Phaser.Scene {
 	this.enter_key = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
 	this.enter_key.on('down', this.handle_press_enter, this);
 
-	// Add music
-	this.bgm = this.sound.add("worm_game_music", {loop : true});
-	this.bgm.play();
-
 	//this.generate_puzzle();
 	this.start_word = DAILY_START_WORD;
 	this.goal_word.setText(DAILY_GOAL_WORD);
@@ -71,6 +67,37 @@ class Game extends Phaser.Scene {
 				     { fontSize: fontsize, fontFamily: "'Inter', sans-serif", color: color}).setResolution(RESOLUTION);
 	new_text.setOrigin(0.5,0.5);
 	return new_text;
+    }
+
+    // Text with a rounded-rect outline and hover effect.
+    // Returns { text, box, zone }. Use zone.on('pointerdown', ...) for clicks.
+    add_button(x, y, text_str, fontsize, text_color, origin_x, origin_y, padding_x, padding_y) {
+	const text = this.add.text(x, y, text_str,
+				   { fontSize: fontsize, fontFamily: "'Inter', sans-serif", color: text_color })
+	    .setResolution(RESOLUTION)
+	    .setOrigin(origin_x, origin_y);
+	const b = text.getBounds();
+	const bx = b.x - padding_x, by = b.y - padding_y;
+	const bw = b.width + padding_x * 2, bh = b.height + padding_y * 2;
+	const muted = Phaser.Display.Color.HexStringToColor(COLOR_MUTED).color;
+	const box = this.add.graphics();
+	const draw = (alpha) => {
+	    box.clear();
+	    box.lineStyle(1.5, muted, alpha);
+	    box.strokeRoundedRect(bx, by, bw, bh, 8);
+	};
+	draw(0.4);
+	const zone = this.add.zone(bx, by, bw, bh).setOrigin(0, 0).setInteractive();
+	zone.on('pointerover', () => draw(0.9));
+	zone.on('pointerout', () => draw(0.4));
+	return { text, box, zone };
+    }
+
+    // Update which mode button is highlighted
+    set_active_mode(mode) {
+	this.regular.text.setColor(mode === 'practice' ? COLOR_GREEN : COLOR_RED);
+	this.daily_challenge.text.setColor(mode === 'daily' ? COLOR_GREEN : COLOR_RED);
+	this.free_play.text.setColor(mode === 'freeplay' ? COLOR_GREEN : COLOR_RED);
     }
 
     // Reset game variables
@@ -269,103 +296,97 @@ class Game extends Phaser.Scene {
 	    }
 	}, this);
 
-	//Sound button. Toggles mute.
-	this.sound_toggle = this.add_text(SOUND_TOGGLE_X,SOUND_TOGGLE_Y,"MUTE",WORD_FONTSIZE,COLOR_RED);
-	this.sound_toggle.setOrigin(1,0);
-	this.sound_toggle.setInteractive();
-	this.sound_toggle.on('pointerdown', function (event) {
-	    if (!this.bgm.mute) {
-		this.bgm.mute = true;
-		this.sound_toggle.alpha = 0.2;
-	    } else {
-		this.bgm.mute = false;
-		this.sound_toggle.alpha = 1.;
-	    }
-	}, this);
+	// Small action buttons along the bottom corners
+	const ACTION_PAD_X = 10, ACTION_PAD_Y = 4;
 
-	//Reset button. This will clear the word history and word count while retaining the same start and end word.
-	this.reset = this.add_text(RESET_X,RESET_Y,"RESET",WORD_FONTSIZE,COLOR_RED);
-	this.reset.setOrigin(0,0);                           
-	this.reset.setInteractive();
-	this.reset.on('pointerdown',function (event) {
-	    this.reset_game_state();
-	}, this);
+	this.reset = this.add_button(RESET_X, RESET_Y, "RESET", WORD_FONTSIZE, COLOR_RED, 0, 0, ACTION_PAD_X, ACTION_PAD_Y);
+	this.reset.zone.on('pointerdown', () => this.reset_game_state());
 
-	//New game button.
-	this.restart = this.add_text(RESTART_X,RESTART_Y,"NEW PUZZLE",WORD_FONTSIZE,COLOR_RED);
-	this.restart.setOrigin(0,0);
-	this.restart.setInteractive();
-	this.restart.on('pointerdown',function (event) {
-	    this.generate_puzzle();
-	    this.reset_game_state();
-	}, this);
-	
-	//Solution button.
-	this.solved = this.add_text(SOLUTION_X,SOLUTION_Y,"SOLUTION",WORD_FONTSIZE,COLOR_RED);
-	this.solved.setOrigin(1,0);
-	this.solved.setInteractive();
-	this.solved.on('pointerdown',function (event) {
-	    this.show_solution();
-	}, this);
-	
+	this.restart = this.add_button(RESTART_X, RESTART_Y, "NEW PUZZLE", WORD_FONTSIZE, COLOR_RED, 0, 0, ACTION_PAD_X, ACTION_PAD_Y);
+	this.restart.zone.on('pointerdown', () => { this.generate_puzzle(); this.set_active_mode('practice'); this.reset_game_state(); });
+
+	this.solved = this.add_button(SOLUTION_X, SOLUTION_Y, "SOLUTION", WORD_FONTSIZE, COLOR_RED, 1, 0, ACTION_PAD_X, ACTION_PAD_Y);
+	this.solved.zone.on('pointerdown', () => this.show_solution());
+
+	// Rules button replaces the old mute toggle
+	this.rules_button = this.add_button(SOUND_TOGGLE_X, SOUND_TOGGLE_Y, "RULES", WORD_FONTSIZE, COLOR_RED, 1, 0, ACTION_PAD_X, ACTION_PAD_Y);
+	this.rules_modal = this.create_rules_modal();
+	this.rules_button.zone.on('pointerdown', () => this.rules_modal.setVisible(true));
+
 	this.load_gamemodes();
     }
 
-    // Load game mode buttons
-    load_gamemodes() {
+    // A dismissible overlay explaining the rules
+    create_rules_modal() {
+	const container = this.add.container(0, 0).setDepth(1000).setVisible(false);
 
-	//Daily challenge. The start and goal words are set by the developers in game_mode_settings.js
-	this.daily_challenge = this.add_text(GMODE2_X,GMODE2_Y,"DAILY PUZZLE",WORD_FONTSIZE,COLOR_GREEN);
-	this.daily_challenge.setOrigin(0.5,0);
-	this.daily_challenge.setInteractive();
-	this.daily_challenge.on('pointerdown',function(event){
+	const backdrop = this.add.rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0x000000, 0.75).setOrigin(0, 0).setInteractive();
+
+	const bw = WINDOW_WIDTH * 0.85, bh = WINDOW_HEIGHT * 0.7;
+	const bx = (WINDOW_WIDTH - bw) / 2, by = (WINDOW_HEIGHT - bh) / 2;
+	const bgColor = Phaser.Display.Color.HexStringToColor(COLOR_BG).color;
+	const mutedColor = Phaser.Display.Color.HexStringToColor(COLOR_MUTED).color;
+	const panel = this.add.graphics();
+	panel.fillStyle(bgColor, 1).fillRoundedRect(bx, by, bw, bh, 12);
+	panel.lineStyle(1.5, mutedColor, 0.8).strokeRoundedRect(bx, by, bw, bh, 12);
+
+	const title = this.add.text(WINDOW_WIDTH / 2, by + 28, "HOW TO PLAY",
+				    { fontSize: 28, fontFamily: "'Inter', sans-serif", color: COLOR_TEXT, fontStyle: "600" })
+	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
+
+	const body_str =
+	    "Get from the start word to the goal word by\n" +
+	    "adding, removing, or changing one letter at\n" +
+	    "a time. Every intermediate word must be a\n" +
+	    "valid English word.\n" +
+	    "\n" +
+	    "DAILY PUZZLE: a curated pair, refreshed daily.\n" +
+	    "PRACTICE: unlimited random pairs.\n" +
+	    "FREE PLAY: pick your own start and goal.\n" +
+	    "\n" +
+	    "Tap anywhere to close.";
+	const body = this.add.text(WINDOW_WIDTH / 2, by + 80, body_str,
+				   { fontSize: 17, fontFamily: "'Inter', sans-serif", color: COLOR_TEXT,
+				     align: "center", lineSpacing: 6 })
+	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
+
+	container.add([backdrop, panel, title, body]);
+	backdrop.on('pointerdown', () => container.setVisible(false));
+	return container;
+    }
+
+    // Load game mode buttons (with bubble boxes)
+    load_gamemodes() {
+	const PAD_X = 16, PAD_Y = 8;
+
+	// Practice — endless play with random word pairs
+	this.regular = this.add_button(GMODE1_X, GMODE1_Y, "PRACTICE", WORD_FONTSIZE, COLOR_RED, 0, 0, PAD_X, PAD_Y);
+	this.regular.zone.on('pointerdown', () => {
+	    this.generate_puzzle();
+	    this.set_active_mode('practice');
+	    this.reset_game_state();
+	});
+
+	// Daily puzzle — curated start/goal pair
+	this.daily_challenge = this.add_button(GMODE2_X, GMODE2_Y, "DAILY PUZZLE", WORD_FONTSIZE, COLOR_GREEN, 0.5, 0, PAD_X, PAD_Y);
+	this.daily_challenge.zone.on('pointerdown', () => {
 	    this.start_word = DAILY_START_WORD;
 	    this.goal_word.setText(DAILY_GOAL_WORD);
-	    console.log(this.start_word,this.goal_word)
-	    this.word_path = calc_word_path(this.start_word,this.goal_word.text,this.word_array,this.word_graph);
-	    this.regular = this.add_text(GMODE1_X,GMODE1_Y,"PRACTICE",WORD_FONTSIZE,COLOR_RED);
-	    this.regular.setOrigin(0,0);
-	    this.daily_challenge = this.add_text(GMODE2_X,GMODE2_Y,"DAILY PUZZLE",WORD_FONTSIZE,COLOR_GREEN);
-	    this.daily_challenge.setOrigin(0.5,0);
-	    this.free_play = this.add_text(GMODE3_X,GMODE3_Y,"FREE PLAY",WORD_FONTSIZE,COLOR_RED);
-	    this.free_play.setOrigin(1,0);
+	    this.word_path = calc_word_path(this.start_word, this.goal_word.text, this.word_array, this.word_graph);
+	    this.set_active_mode('daily');
 	    this.reset_game_state();
-	    
-	}, this);
-	//Practice mode. This is an endless play mode where start and goal words are picked from the dictionary.
-	this.regular = this.add_text(GMODE1_X,GMODE1_Y,"PRACTICE",WORD_FONTSIZE,COLOR_RED);
-	this.regular.setOrigin(0,0);
-	this.regular.setInteractive();
-	this.regular.on('pointerdown',function(event){
-	    this.generate_puzzle();
-	    this.regular = this.add_text(GMODE1_X,GMODE1_Y,"PRACTICE",WORD_FONTSIZE,COLOR_GREEN);
-	    this.regular.setOrigin(0,0);
-	    this.daily_challenge = this.add_text(GMODE2_X,GMODE2_Y,"DAILY PUZZLE",WORD_FONTSIZE,COLOR_RED);
-	    this.daily_challenge.setOrigin(0.5,0);
-	    this.free_play = this.add_text(GMODE3_X,GMODE3_Y,"FREE PLAY",WORD_FONTSIZE,COLOR_RED);
-	    this.free_play.setOrigin(1,0);
-	    this.reset_game_state();
-	}, this);
+	});
 
-	//Free Play. Start and ends goal words are chosen by the user.
-	this.free_play = this.add_text(GMODE3_X,GMODE3_Y,"FREE PLAY",WORD_FONTSIZE,COLOR_RED);
-	this.free_play.setOrigin(1,0);
-	this.free_play.setInteractive();
-	this.free_play.on('pointerdown',function(event){
+	// Free play — user enters start and goal words
+	this.free_play = this.add_button(GMODE3_X, GMODE3_Y, "FREE PLAY", WORD_FONTSIZE, COLOR_RED, 1, 0, PAD_X, PAD_Y);
+	this.free_play.zone.on('pointerdown', () => {
 	    this.start_word = "???";
 	    this.goal_word.setText("???");
-	    
-	    this.regular = this.add_text(GMODE1_X,GMODE1_Y,"PRACTICE",WORD_FONTSIZE,COLOR_RED);
-	    this.regular.setOrigin(0,0);
-	    this.daily_challenge = this.add_text(GMODE2_X,GMODE2_Y,"DAILY PUZZLE",WORD_FONTSIZE,COLOR_RED);
-	    this.daily_challenge.setOrigin(0.5,0);
-	    this.free_play = this.add_text(GMODE3_X,GMODE3_Y,"FREE PLAY",WORD_FONTSIZE,COLOR_GREEN);
-	    this.free_play.setOrigin(1,0);
-
+	    this.set_active_mode('freeplay');
 	    this.reset_game_state();
 	    this.error_msg.setText("Enter starting word.");
 	    this.freeplay_stage = FREEPLAY_STAGES["first_word"];
-	}, this);
+	});
     }
 
     // Load dictionary as array
