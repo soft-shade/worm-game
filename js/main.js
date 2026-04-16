@@ -9,8 +9,11 @@ var config = {
 
 function startGame() { new Phaser.Game(config); }
 
-if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(startGame);
+if (document.fonts && document.fonts.load) {
+    Promise.all([
+        document.fonts.load("24px 'JetBrains Mono'"),
+        document.fonts.load("bold 24px 'JetBrains Mono'")
+    ]).then(startGame).catch(startGame);
 } else {
     startGame();
 }
