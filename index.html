@@ -12,25 +12,30 @@
 
       gtag('config', 'G-VL580VY81P');
     </script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #000;
+      }
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    </style>
     </head>
 
     <body>
+        <div id="game"></div>
         <!-- Game classes -->
         <script src="js/boot.js"></script>
         <script src="js/backend/word_logic.js"></script>
         <script src="js/ui/settings.js"></script>
         <script src="js/ui/game_mode_settings.js"></script>
-        <script src="js/ui/game.js"></script>	
+        <script src="js/ui/game.js"></script>
         <script src="js/ui/intro.js"></script>
         <script src="js/main.js"></script>
     </body>
-
-<b>Rules:</b> 
-<p>The goal is to get from a starting word to an ending word by either adding, removing, or changing one letter at a time, keeping all intermediate words valid english words. The dictionary used is based on the Scrabble Dictionary</p>
-
-<p>The game has three modes:</p>
-<p><b>Daily Puzzle:</b> A single curated word pair is given every day</p>
-<p><b>Practice:</b> Unlimited random start and end words</p>
-<p><b>Free play:</b> User picks start and end words</p>
-
 </html>
