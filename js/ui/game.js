@@ -8,6 +8,7 @@ class Game extends Phaser.Scene {
 	this.start_words_array;
 
 	this.start_word;
+	this.current_word;
 	this.prev_word;
 	this.goal_word;
 	this.word_path;
@@ -69,27 +70,50 @@ class Game extends Phaser.Scene {
 	return new_text;
     }
 
-    // Text with a rounded-rect outline and hover effect.
-    // Returns { text, box, zone }. Use zone.on('pointerdown', ...) for clicks.
+    // Text with a rounded-rect bubble (fill + outline + drop shadow) and
+    // a hover highlight. Returns { text, box, zone }. Use
+    // zone.on('pointerdown', ...) for clicks.
     add_button(x, y, text_str, fontsize, text_color, origin_x, origin_y, padding_x, padding_y) {
-	const text = this.add.text(x, y, text_str,
+	// Measure text first with a throwaway render so we can size the box.
+	const probe = this.add.text(0, 0, text_str,
+				    { fontSize: fontsize, fontFamily: "'Inter', sans-serif" })
+	      .setResolution(RESOLUTION);
+	const tw = probe.width, th = probe.height;
+	probe.destroy();
+
+	const tx = x - tw * origin_x;
+	const ty = y - th * origin_y;
+	const bx = tx - padding_x, by = ty - padding_y;
+	const bw = tw + padding_x * 2, bh = th + padding_y * 2;
+
+	const muted = Phaser.Display.Color.HexStringToColor(COLOR_MUTED).color;
+	const fill = Phaser.Display.Color.HexStringToColor(COLOR_BOX_FILL).color;
+	const radius = 8;
+
+	// Draw the box first so subsequently-added text renders on top.
+	const box = this.add.graphics();
+	const draw = (stroke_alpha) => {
+	    box.clear();
+	    // Drop shadow, offset down+right.
+	    box.fillStyle(0x000000, 0.35);
+	    box.fillRoundedRect(bx + 2, by + 3, bw, bh, radius);
+	    // Fill (slightly lighter than page background for a subtle lift).
+	    box.fillStyle(fill, 1);
+	    box.fillRoundedRect(bx, by, bw, bh, radius);
+	    // Outline.
+	    box.lineStyle(1.5, muted, stroke_alpha);
+	    box.strokeRoundedRect(bx, by, bw, bh, radius);
+	};
+	draw(0.5);
+
+	const text = this.add.text(tx, ty, text_str,
 				   { fontSize: fontsize, fontFamily: "'Inter', sans-serif", color: text_color })
 	    .setResolution(RESOLUTION)
-	    .setOrigin(origin_x, origin_y);
-	const b = text.getBounds();
-	const bx = b.x - padding_x, by = b.y - padding_y;
-	const bw = b.width + padding_x * 2, bh = b.height + padding_y * 2;
-	const muted = Phaser.Display.Color.HexStringToColor(COLOR_MUTED).color;
-	const box = this.add.graphics();
-	const draw = (alpha) => {
-	    box.clear();
-	    box.lineStyle(1.5, muted, alpha);
-	    box.strokeRoundedRect(bx, by, bw, bh, 8);
-	};
-	draw(0.4);
+	    .setOrigin(0, 0);
+
 	const zone = this.add.zone(bx, by, bw, bh).setOrigin(0, 0).setInteractive();
-	zone.on('pointerover', () => draw(0.9));
-	zone.on('pointerout', () => draw(0.4));
+	zone.on('pointerover', () => draw(0.95));
+	zone.on('pointerout', () => draw(0.5));
 	return { text, box, zone };
     }
 
@@ -108,6 +132,7 @@ class Game extends Phaser.Scene {
 	this.complaint_counter = 0;
 	this.freeplay_stage = FREEPLAY_STAGES["none"];
 	this.score_counter.setText("0");
+	this.current_word = this.start_word.toUpperCase();
 	this.prev_word.setText(this.start_word.toUpperCase());
 	this.word_history.setText("> "+this.start_word.toUpperCase());
     }
@@ -131,14 +156,10 @@ class Game extends Phaser.Scene {
 	//console.log(this.word_path)
 	this.word_history.setText("");
 	this.word_history.setOrigin(0,0);
-	for (let words in this.word_path) {
-	    console.log(words);
-	    this.word_history.text = this.word_history.text + "\n> " +this.word_path[words].toUpperCase();
-	    this.prev_word.setText(words);
-	    if (!this.check_victory(words)) {
-		if (this.word_history.displayHeight > HISTORY_BOX_H)
-		    this.word_history.y = HISTORY_BOX_Y + HISTORY_BOX_H - this.word_history.displayHeight;
-	    }
+	for (let i = 0; i < this.word_path.length; i++) {
+	    this.word_history.text = this.word_history.text + "\n> " + this.word_path[i].toUpperCase();
+	    if (this.word_history.displayHeight > HISTORY_BOX_H)
+		this.word_history.y = HISTORY_BOX_Y + HISTORY_BOX_H - this.word_history.displayHeight;
 	}
 	this.error_msg.setText(`One ideal solution was ${this.word_path.length-1} steps.`);
 	
@@ -164,6 +185,7 @@ class Game extends Phaser.Scene {
 	// Entering the first word for freeplay mode
 	if (this.freeplay_stage == FREEPLAY_STAGES["first_word"]) {
 	    this.start_word = input_word;
+	    this.current_word = input_word;
 	    this.prev_word.setText(this.start_word);
 	    this.word_history.setText("> "+this.start_word);
 	    this.freeplay_stage = FREEPLAY_STAGES["second_word"];
@@ -206,26 +228,24 @@ class Game extends Phaser.Scene {
 		return;
 	    }
 	    this.word_history.text = this.word_history.text + "\n> " + input_word;
-	    this.prev_word.setText(input_word);
+	    this.current_word = input_word;
 	    if (!this.check_victory(input_word)) {
 		this.score_counter.setText(++this.count);
 		if (this.word_history.displayHeight > HISTORY_BOX_H)
 		    this.word_history.y = HISTORY_BOX_Y + HISTORY_BOX_H - this.word_history.displayHeight;
 	    } else {
 		let word_path = calc_word_path(this.start_word,input_word,this.word_array,this.word_graph)
-		
+
 		this.error_msg.setText(`The shortest possible path is ${word_path.length-1} steps.`);
 		this.score_counter.setText(`WIN IN ${++this.count}!`);
 		this.VICTORY = true;
-		this.prev_word.setText("");
-		//this.goal_word.setText("");
 	    }
 	}
     }
 
     // Check if the word is off by one letter from prev word
     check_word_off_by_one(input_word) {
-	let prev_word = this.prev_word.text;
+	let prev_word = this.current_word;
 	// Basic checks before the letter loop
 	if(input_word.length == 0 || 
 	   input_word === prev_word || 
@@ -297,19 +317,19 @@ class Game extends Phaser.Scene {
 	}, this);
 
 	// Small action buttons along the bottom corners
-	const ACTION_PAD_X = 10, ACTION_PAD_Y = 4;
+	const APX = 12, APY = 6;
 
-	this.reset = this.add_button(RESET_X, RESET_Y, "RESET", WORD_FONTSIZE, COLOR_RED, 0, 0, ACTION_PAD_X, ACTION_PAD_Y);
+	this.reset = this.add_button(RESET_X, RESET_Y, "RESET", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
 	this.reset.zone.on('pointerdown', () => this.reset_game_state());
 
-	this.restart = this.add_button(RESTART_X, RESTART_Y, "NEW PUZZLE", WORD_FONTSIZE, COLOR_RED, 0, 0, ACTION_PAD_X, ACTION_PAD_Y);
+	this.restart = this.add_button(RESTART_X, RESTART_Y, "NEW PUZZLE", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
 	this.restart.zone.on('pointerdown', () => { this.generate_puzzle(); this.set_active_mode('practice'); this.reset_game_state(); });
 
-	this.solved = this.add_button(SOLUTION_X, SOLUTION_Y, "SOLUTION", WORD_FONTSIZE, COLOR_RED, 1, 0, ACTION_PAD_X, ACTION_PAD_Y);
+	this.solved = this.add_button(SOLUTION_X, SOLUTION_Y, "SOLUTION", ACTION_FONTSIZE, COLOR_RED, 1, 0, APX, APY);
 	this.solved.zone.on('pointerdown', () => this.show_solution());
 
 	// Rules button replaces the old mute toggle
-	this.rules_button = this.add_button(SOUND_TOGGLE_X, SOUND_TOGGLE_Y, "RULES", WORD_FONTSIZE, COLOR_RED, 1, 0, ACTION_PAD_X, ACTION_PAD_Y);
+	this.rules_button = this.add_button(SOUND_TOGGLE_X, SOUND_TOGGLE_Y, "RULES", ACTION_FONTSIZE, COLOR_RED, 1, 0, APX, APY);
 	this.rules_modal = this.create_rules_modal();
 	this.rules_button.zone.on('pointerdown', () => this.rules_modal.setVisible(true));
 
@@ -324,11 +344,12 @@ class Game extends Phaser.Scene {
 
 	const bw = WINDOW_WIDTH * 0.85, bh = WINDOW_HEIGHT * 0.7;
 	const bx = (WINDOW_WIDTH - bw) / 2, by = (WINDOW_HEIGHT - bh) / 2;
-	const bgColor = Phaser.Display.Color.HexStringToColor(COLOR_BG).color;
+	const fillColor = Phaser.Display.Color.HexStringToColor(COLOR_BOX_FILL).color;
 	const mutedColor = Phaser.Display.Color.HexStringToColor(COLOR_MUTED).color;
 	const panel = this.add.graphics();
-	panel.fillStyle(bgColor, 1).fillRoundedRect(bx, by, bw, bh, 12);
-	panel.lineStyle(1.5, mutedColor, 0.8).strokeRoundedRect(bx, by, bw, bh, 12);
+	panel.fillStyle(0x000000, 0.5).fillRoundedRect(bx + 4, by + 6, bw, bh, 14);
+	panel.fillStyle(fillColor, 1).fillRoundedRect(bx, by, bw, bh, 14);
+	panel.lineStyle(1.5, mutedColor, 0.8).strokeRoundedRect(bx, by, bw, bh, 14);
 
 	const title = this.add.text(WINDOW_WIDTH / 2, by + 28, "HOW TO PLAY",
 				    { fontSize: 28, fontFamily: "'Inter', sans-serif", color: COLOR_TEXT, fontStyle: "600" })
@@ -357,7 +378,7 @@ class Game extends Phaser.Scene {
 
     // Load game mode buttons (with bubble boxes)
     load_gamemodes() {
-	const PAD_X = 16, PAD_Y = 8;
+	const PAD_X = 18, PAD_Y = 10;
 
 	// Practice — endless play with random word pairs
 	this.regular = this.add_button(GMODE1_X, GMODE1_Y, "PRACTICE", WORD_FONTSIZE, COLOR_RED, 0, 0, PAD_X, PAD_Y);
