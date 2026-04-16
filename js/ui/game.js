@@ -377,6 +377,8 @@ class Game extends Phaser.Scene {
 	this.word_array = [];
 	this.word_graph = [];
 	for (let i = 0; i < file_lines.length; i++) {
+	    if (file_lines[i] === '')
+		continue;
 	    let line_array = file_lines[i].split(",");
 	    this.word_array.push(line_array[0]);
 	    let neighbors_array = line_array.slice(1);
