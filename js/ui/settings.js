@@ -42,9 +42,12 @@ const GMODE1_Y = WINDOW_HEIGHT * 0.2/10
 const GMODE2_Y = WINDOW_HEIGHT * 0.2/10 
 const GMODE3_Y = WINDOW_HEIGHT * 0.2/10 
 
-const COLOR_RED = "#ff0000"
-const COLOR_GREEN = "#00ff00"
-const COLOR_BLUE = "#0000ff"
+const COLOR_TEXT = "#cdd6f4"
+const COLOR_RED = "#f38ba8"
+const COLOR_GREEN = "#a6e3a1"
+const COLOR_BLUE = "#89b4fa"
+const COLOR_BG = "#1e1e2e"
+const COLOR_MUTED = "#6c7086"
 
 const FREEPLAY_STAGES = {
     none: 0,
