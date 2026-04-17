@@ -879,42 +879,31 @@ class Game extends Phaser.Scene {
 	const rows_start_y = by + 196;
 	const label_right_x = bar_x - 10;
 
-	// Draw an earthworm-like shape on `g`: smooth rounded body that
-	// tapers to a narrow rounded tip at each end, with thin darker rib
-	// lines across the middle to evoke segmentation (without cutting
-	// the body into pieces).
+	// Draw an earthworm-like shape on `g` using only Phaser 3 Graphics
+	// primitives (fillRect + fillTriangle) — Phaser 3.55's Graphics
+	// doesn't have quadraticCurveTo, so an earlier bezier-based version
+	// threw and broke the rest of the modal. The body is a full-height
+	// rectangle flanked by two pointed triangular tips; thin darker
+	// vertical lines across the middle provide segmentation.
 	const draw_worm = (g, x, y, w, h, color_int) => {
 	    if (w <= 0) return;
 	    const cy = y + h / 2;
-	    // Taper region width: how much of the length is used to ramp
-	    // the body outline from a narrow tip up to full body height.
-	    const taper = Math.min(h * 0.85, w / 2);
-	    // Vertical half-height at the tip itself (narrower than body).
-	    const tip_hh = h * 0.18;
+	    const taper = Math.min(h * 0.75, w / 2);
 
 	    g.fillStyle(color_int, 0.95);
-	    g.beginPath();
-	    // Top edge: narrow left tip → curve up to body top → along → curve down to right tip.
-	    g.moveTo(x, cy - tip_hh);
-	    g.quadraticCurveTo(x, y, x + taper, y);
-	    g.lineTo(x + w - taper, y);
-	    g.quadraticCurveTo(x + w, y, x + w, cy - tip_hh);
-	    // Right tip edge.
-	    g.lineTo(x + w, cy + tip_hh);
-	    // Bottom edge, mirrored.
-	    g.quadraticCurveTo(x + w, y + h, x + w - taper, y + h);
-	    g.lineTo(x + taper, y + h);
-	    g.quadraticCurveTo(x, y + h, x, cy + tip_hh);
-	    g.closePath();
-	    g.fillPath();
+	    if (w > 2 * taper) {
+		g.fillRect(x + taper, y, w - 2 * taper, h);
+	    }
+	    // Left and right pointed tips.
+	    g.fillTriangle(x, cy, x + taper, y, x + taper, y + h);
+	    g.fillTriangle(x + w, cy, x + w - taper, y, x + w - taper, y + h);
 
-	    // Segmentation: thin darker lines across the body, clear of the
-	    // tapered tips so the rings don't overshoot the silhouette.
-	    const rib_spacing = 20;
-	    const rib_start = x + taper + 3;
-	    const rib_end = x + w - taper - 3;
+	    // Subtle ribbing across the body, avoiding the tapered tips.
+	    const rib_spacing = 22;
+	    const rib_start = x + taper + 4;
+	    const rib_end = x + w - taper - 4;
 	    g.lineStyle(1.2, 0x000000, 0.28);
-	    for (let rx = rib_start + rib_spacing - 3; rx <= rib_end; rx += rib_spacing) {
+	    for (let rx = rib_start + rib_spacing - 4; rx <= rib_end; rx += rib_spacing) {
 		g.beginPath();
 		g.moveTo(rx, y + 2);
 		g.lineTo(rx, y + h - 2);
