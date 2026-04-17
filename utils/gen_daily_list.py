@@ -14,6 +14,7 @@ from collections import deque
 GRAPH_PATH = 'assets/word_graph_merged15.txt'
 OUT_PATH = 'assets/daily_list.txt'
 START_DATE = dt.date(2026, 4, 16)  # Thursday
+END_DATE = dt.date(2026, 12, 31)
 MIN_STEPS = 5
 MAX_STEPS = 12
 
@@ -203,6 +204,171 @@ CANDIDATES = [
     ('castle', 'palace'), ('swan', 'duck'),
     # Feelings + actions
     ('sleep', 'dream'), ('dream', 'wake'),
+
+    # ---- expanded batch ----
+    # More food
+    ('bread', 'toast'), ('meat', 'fish'), ('egg', 'nest'),
+    ('cookie', 'crumb'), ('cake', 'crumb'), ('crust', 'slice'),
+    ('soup', 'stew'), ('stew', 'beef'), ('fries', 'chips'),
+    ('cone', 'scoop'), ('scoop', 'cream'), ('wafer', 'cookie'),
+    ('bagel', 'donut'), ('donut', 'hole'), ('honey', 'bee'),
+    ('butter', 'cream'), ('flour', 'dough'), ('yeast', 'beer'),
+    ('syrup', 'honey'), ('spice', 'herb'), ('pepper', 'mint'),
+    ('plum', 'pear'), ('grape', 'wine'), ('tart', 'pie'),
+    ('cherry', 'berry'), ('lemon', 'tart'),
+    # More opposites
+    ('sweet', 'sour'), ('loud', 'quiet'), ('empty', 'full'),
+    ('dirty', 'clean'), ('smooth', 'rough'), ('thick', 'thin'),
+    ('heavy', 'light'), ('tall', 'short'), ('deep', 'shallow'),
+    ('dull', 'sharp'), ('strong', 'weak'), ('kind', 'cruel'),
+    ('north', 'east'), ('east', 'south'), ('south', 'west'),
+    # More actions
+    ('swim', 'float'), ('drive', 'park'), ('fly', 'land'),
+    ('climb', 'fall'), ('crawl', 'walk'), ('skip', 'hop'),
+    ('slip', 'trip'), ('eat', 'drink'), ('bite', 'chew'),
+    ('chew', 'swallow'), ('smell', 'taste'), ('hear', 'see'),
+    ('hug', 'kiss'), ('touch', 'feel'), ('build', 'break'),
+    ('break', 'fix'), ('catch', 'throw'), ('throw', 'catch'),
+    ('give', 'take'), ('take', 'give'), ('lift', 'drop'),
+    ('shake', 'stir'),
+    # More emotions
+    ('angry', 'calm'), ('bored', 'excited'), ('scared', 'brave'),
+    ('proud', 'ashamed'), ('hungry', 'full'), ('tired', 'awake'),
+    ('awake', 'asleep'), ('nervous', 'calm'), ('merry', 'glum'),
+    # More nature
+    ('flower', 'petal'), ('grass', 'blade'), ('dirt', 'mud'),
+    ('wave', 'shore'), ('tide', 'wave'), ('leaf', 'branch'),
+    ('branch', 'trunk'), ('root', 'stem'), ('bud', 'bloom'),
+    ('seed', 'sprout'), ('ice', 'fire'), ('fog', 'mist'),
+    ('breeze', 'wind'), ('hail', 'snow'), ('dew', 'frost'),
+    # More household / objects
+    ('book', 'cover'), ('page', 'word'), ('clock', 'watch'),
+    ('watch', 'wrist'), ('purse', 'wallet'), ('bag', 'tote'),
+    ('box', 'crate'), ('bottle', 'cap'), ('sink', 'drain'),
+    ('tub', 'soap'), ('mirror', 'wall'), ('lamp', 'bulb'),
+    ('shelf', 'book'), ('couch', 'bed'), ('bed', 'sheet'),
+    ('sheet', 'pillow'), ('rug', 'floor'), ('pan', 'lid'),
+    # More places
+    ('city', 'town'), ('town', 'village'), ('house', 'home'),
+    ('shop', 'store'), ('park', 'yard'), ('yard', 'lawn'),
+    ('room', 'hall'), ('stage', 'show'), ('bank', 'coin'),
+    ('farm', 'barn'), ('barn', 'hay'),
+    # More body
+    ('teeth', 'tongue'), ('jaw', 'chin'), ('cheek', 'chin'),
+    ('neck', 'nape'), ('wrist', 'ankle'), ('knee', 'foot'),
+    ('elbow', 'wrist'), ('palm', 'wrist'),
+    # More animals
+    ('cow', 'calf'), ('hen', 'chick'), ('pup', 'dog'),
+    ('lamb', 'sheep'), ('kitten', 'cat'), ('cat', 'kitten'),
+    ('duck', 'duckling'), ('dog', 'puppy'), ('foal', 'horse'),
+    ('hog', 'pig'), ('goat', 'sheep'), ('horse', 'pony'),
+    # More transport
+    ('car', 'truck'), ('plane', 'jet'), ('bus', 'train'),
+    ('bike', 'car'), ('boat', 'yacht'), ('canoe', 'kayak'),
+    ('ship', 'dock'), ('sea', 'ship'), ('train', 'track'),
+    # Sports
+    ('goal', 'net'), ('bat', 'ball'), ('club', 'golf'),
+    ('net', 'point'), ('game', 'score'), ('hoop', 'ball'),
+    # Jobs
+    ('cook', 'chef'), ('nurse', 'doctor'), ('farmer', 'field'),
+    ('pilot', 'plane'), ('baker', 'bread'),
+    # More music
+    ('drum', 'horn'), ('piano', 'key'), ('note', 'chord'),
+    ('song', 'verse'), ('flute', 'horn'), ('bass', 'drum'),
+    # Literature
+    ('novel', 'poem'), ('story', 'tale'), ('fact', 'myth'),
+    ('chapter', 'page'),
+    # Time
+    ('noon', 'night'), ('dawn', 'day'), ('minute', 'hour'),
+    ('week', 'month'), ('year', 'day'), ('today', 'tomorrow'),
+    # Kids / play
+    ('hide', 'find'), ('play', 'rest'), ('toy', 'child'),
+    # Fantasy
+    ('sword', 'shield'), ('dragon', 'knight'), ('magic', 'spell'),
+    ('spell', 'curse'), ('elf', 'fairy'), ('wand', 'spell'),
+    # Random
+    ('match', 'flame'), ('flame', 'spark'), ('spark', 'fire'),
+    ('thunder', 'storm'), ('echo', 'sound'), ('ring', 'bell'),
+    ('bell', 'chime'), ('chime', 'bell'),
+    # Rooms
+    ('kitchen', 'pantry'), ('bath', 'shower'), ('shower', 'bath'),
+    # Office
+    ('paper', 'file'), ('file', 'folder'), ('folder', 'stack'),
+    # Office actions
+    ('screen', 'key'), ('phone', 'call'), ('mouse', 'pad'),
+    # Classic phrases
+    ('trick', 'treat'), ('cup', 'saucer'), ('cake', 'candle'),
+    ('bread', 'crumb'), ('salt', 'wound'), ('bird', 'feather'),
+    ('lion', 'mane'), ('horse', 'mane'), ('cat', 'whisker'),
+    # Adjectives
+    ('calm', 'wild'), ('tame', 'wild'), ('brave', 'meek'),
+    ('gentle', 'harsh'), ('plain', 'fancy'),
+    # More nature pairs
+    ('vine', 'grape'), ('moss', 'fern'), ('fern', 'leaf'),
+    ('beach', 'sand'), ('cliff', 'ocean'), ('hill', 'dale'),
+    ('dale', 'glen'), ('pond', 'lake'),
+    # More food/drink
+    ('milk', 'tea'), ('tea', 'cup'), ('cup', 'mug'),
+    ('mug', 'jug'), ('jug', 'pot'), ('oil', 'fat'),
+    ('fat', 'thin'), ('nut', 'bolt'),
+    # Action pairs
+    ('rest', 'work'), ('play', 'work'), ('work', 'play'),
+    ('move', 'stop'), ('start', 'stop'), ('rise', 'set'),
+    # Colors
+    ('red', 'rose'), ('blue', 'sky'), ('green', 'leaf'),
+    ('brown', 'mud'), ('yellow', 'sun'),
+    # Musical instruments
+    ('harp', 'lyre'), ('piano', 'harp'),
+    # More modern
+    ('blog', 'vlog'), ('post', 'tweet'),
+    # Misc
+    ('wheat', 'bread'), ('bean', 'pea'), ('pea', 'bean'),
+    ('nut', 'seed'), ('seed', 'fruit'), ('fruit', 'core'),
+    # Weather
+    ('cloud', 'fog'), ('fog', 'smog'), ('heat', 'haze'),
+    # Feelings short
+    ('glad', 'sad'), ('mad', 'glad'),
+    # Relationship
+    ('host', 'guest'), ('kin', 'friend'),
+    # Dance
+    ('waltz', 'tango'), ('dance', 'step'),
+    # Mapping / direction
+    ('start', 'finish'), ('line', 'curve'),
+    # Games
+    ('rook', 'pawn'), ('pawn', 'king'), ('chess', 'piece'),
+    # Fashion
+    ('belt', 'buckle'), ('button', 'zipper'), ('tie', 'knot'),
+    ('knot', 'bow'),
+    # Body actions
+    ('grip', 'clasp'), ('wink', 'blink'), ('blink', 'stare'),
+    # More classic
+    ('heart', 'soul'), ('soul', 'mind'), ('mind', 'brain'),
+    # Kitchen items
+    ('stove', 'oven'), ('plate', 'dish'), ('dish', 'bowl'),
+    # Reverse / repeat pairs (different paths)
+    ('bone', 'marrow'), ('vein', 'artery'),
+    # Math
+    ('plus', 'minus'), ('odd', 'even'), ('add', 'take'),
+    # More
+    ('snow', 'flake'), ('rain', 'drop'), ('sun', 'beam'),
+    ('wind', 'gust'), ('storm', 'rain'),
+    # Light / dark
+    ('ray', 'beam'), ('dark', 'gloom'), ('glow', 'shine'),
+    # Tools / handy
+    ('tool', 'nail'), ('screw', 'bolt'), ('bolt', 'nut'),
+    ('hammer', 'nail'), ('saw', 'axe'), ('axe', 'chop'),
+    # Language
+    ('word', 'verse'), ('line', 'verse'), ('verse', 'rhyme'),
+    # Adventure
+    ('map', 'key'), ('hero', 'quest'), ('cave', 'dark'),
+    # Farm / country
+    ('field', 'crop'), ('crop', 'grain'), ('grain', 'seed'),
+    # Ocean life
+    ('fish', 'scale'), ('shell', 'pearl'), ('crab', 'shell'),
+    # Time of year
+    ('rose', 'bloom'), ('snow', 'flake'),
+    # Short opposites
+    ('sit', 'stand'), ('hold', 'drop'),
 ]
 
 
@@ -327,10 +493,10 @@ def main():
         closest = min(remaining_lengths, key=lambda L: abs(L - mid))
         return by_len[closest].pop(), closest
 
-    # Build date->pair list until we run out.
+    # Build date->pair list until we reach END_DATE or run out of pairs.
     output = []
     d = START_DATE
-    while True:
+    while d <= END_DATE:
         pick, L = pick_for(d.weekday())
         if pick is None:
             break
