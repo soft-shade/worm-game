@@ -921,20 +921,39 @@ class Game extends Phaser.Scene {
 	const mode_label = (mode === 'daily')
 	      ? `DAILY PUZZLE #${this.daily_puzzle_number()}`
 	      : 'PRACTICE';
-	const subtitle_str = won ? `${mode_label} — SOLVED` : `${mode_label} — GAVE UP`;
-	const subtitle = this.add.text(WINDOW_WIDTH / 2, by + 76, subtitle_str,
-				       { fontSize: 20, fontFamily: "'Inter', sans-serif",
-					 color: won ? COLOR_GREEN : COLOR_RED, fontStyle: "600" })
+
+	// Subtitle composition depends on whether the current game has
+	// ended. Mid-game ("STATISTICS" tap during play) shows just the
+	// mode label; ended games show the result plus the ideal length.
+	const ideal_steps = (this.word_path && this.word_path.length > 0)
+	      ? this.word_path.length - 1 : null;
+	const ended = this.game_over();
+	let main_str = mode_label;
+	if (ended && this.VICTORY) main_str = `${mode_label} — SOLVED (${this.count} steps)`;
+	else if (ended && this.GAVE_UP) main_str = `${mode_label} — GAVE UP`;
+	const subtitle = this.add.text(WINDOW_WIDTH / 2, by + 72, main_str,
+				       { fontSize: 18, fontFamily: "'Inter', sans-serif",
+					 color: (ended && !this.VICTORY) ? COLOR_RED
+					     : (ended ? COLOR_GREEN : COLOR_TEXT),
+					 fontStyle: "600" })
 	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
+	let ideal_line = null;
+	if (ended && ideal_steps !== null) {
+	    ideal_line = this.add.text(WINDOW_WIDTH / 2, by + 100,
+				       `Ideal Solution (${ideal_steps} steps)`,
+				       { fontSize: 14, fontFamily: "'Inter', sans-serif",
+					 color: COLOR_TEXT })
+		  .setOrigin(0.5, 0).setResolution(RESOLUTION);
+	}
 
 	const summary_str = `Streak: ${st.streak}   Best: ${st.best_streak}\n` +
 			    `Wins: ${st.wins || 0}   Give ups: ${st.giveups || 0}`;
-	const summary = this.add.text(WINDOW_WIDTH / 2, by + 112, summary_str,
+	const summary = this.add.text(WINDOW_WIDTH / 2, by + 124, summary_str,
 				      { fontSize: 16, fontFamily: "'Inter', sans-serif",
 					color: COLOR_TEXT, align: "center", lineSpacing: 4 })
 	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
 
-	const section_header = this.add.text(WINDOW_WIDTH / 2, by + 168, "Outcome distribution",
+	const section_header = this.add.text(WINDOW_WIDTH / 2, by + 174, "Outcome distribution",
 					     { fontSize: 13, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
 	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
 
@@ -964,8 +983,19 @@ class Game extends Phaser.Scene {
 	const count_col_x = bar_end_x + 20;
 	const bar_h = 18;
 	const row_gap = 30;
-	const rows_start_y = by + 196;
+	const rows_start_y = by + 200;
 	const label_right_x = bar_x - 10;
+
+	// Which row corresponds to the just-completed game? Used to flag
+	// the matching row visually. Only set when the game has ended.
+	let active_row = -1;
+	if (ended) {
+	    if (this.GAVE_UP) active_row = 6;
+	    else if (this.VICTORY && ideal_steps !== null) {
+		const over = Math.max(0, this.count - ideal_steps);
+		active_row = Math.min(over, 5);
+	    }
+	}
 
 	// Draw the worm as a capsule (rounded rect with radius = h/2) so
 	// its end caps match the rounded ends of the grey track behind it,
@@ -990,12 +1020,26 @@ class Game extends Phaser.Scene {
 	};
 
 	const items = [backdrop, panel, header, subtitle, summary, section_header];
+	if (ideal_line) items.push(ideal_line);
 	for (let i = 0; i < rows.length; i++) {
 	    const r = rows[i];
 	    const row_y = rows_start_y + i * row_gap;
+	    const is_active = (i === active_row);
+	    const label_color = is_active ? (i === 6 ? COLOR_RED : COLOR_GREEN) : COLOR_TEXT;
+
+	    // Highlight: subtle filled rounded rect spanning the row, plus
+	    // a tiny pointer marker in front of the label.
+	    if (is_active) {
+		const hl = this.add.graphics();
+		const accent = (i === 6) ? redColor : greenColor;
+		hl.fillStyle(accent, 0.10);
+		hl.fillRoundedRect(bx + 12, row_y - 4, bw - 24, bar_h + 8, 6);
+		items.push(hl);
+	    }
 
 	    const label = this.add.text(label_right_x, row_y + bar_h / 2, r.label,
-					{ fontSize: 14, fontFamily: "'Inter', sans-serif", color: COLOR_TEXT })
+					{ fontSize: 14, fontFamily: "'Inter', sans-serif",
+					  color: label_color, fontStyle: is_active ? "600" : "400" })
 		  .setOrigin(1, 0.5).setResolution(RESOLUTION);
 
 	    const bar = this.add.graphics();
@@ -1008,7 +1052,8 @@ class Game extends Phaser.Scene {
 	    }
 
 	    const count = this.add.text(count_col_x, row_y + bar_h / 2, String(r.count),
-					{ fontSize: 14, fontFamily: "'Inter', sans-serif", color: COLOR_TEXT })
+					{ fontSize: 14, fontFamily: "'Inter', sans-serif",
+					  color: label_color, fontStyle: is_active ? "600" : "400" })
 		  .setOrigin(1, 0.5).setResolution(RESOLUTION);
 
 	    items.push(label, bar, count);
