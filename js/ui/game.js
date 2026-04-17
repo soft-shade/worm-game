@@ -398,11 +398,13 @@ class Game extends Phaser.Scene {
 	if (this.VICTORY) {
 	    this.score_counter.setText(`WIN IN ${this.count}!`);
 	    this.error_msg.setText(`The shortest possible path is ${this.word_path.length - 1} steps.`);
+	    if (this.ideal_history) this.ideal_history.setText("");
 	} else if (this.GAVE_UP) {
 	    this.score_counter.setText("GAVE UP");
-	    this.error_msg.setText(`One ideal solution was ${this.word_path.length - 1} steps.`);
+	    this.show_solution();   // re-render ideal in the right column
 	} else {
 	    this.score_counter.setText(String(this.count));
+	    if (this.ideal_history) this.ideal_history.setText("");
 	}
 	this.refresh_button_states();
 	this.update_solution_button();
@@ -454,11 +456,13 @@ class Game extends Phaser.Scene {
 	    const path = calc_word_path(this.start_word, last, this.word_array, this.word_graph);
 	    this.error_msg.setText(`The shortest possible path is ${path.length - 1} steps.`);
 	    this.score_counter.setText(`WIN IN ${this.count}!`);
+	    if (this.ideal_history) this.ideal_history.setText("");
 	} else if (this.GAVE_UP) {
-	    this.error_msg.setText(`One ideal solution was ${this.word_path.length - 1} steps.`);
 	    this.score_counter.setText("GAVE UP");
+	    this.show_solution();   // re-render ideal in the right column
 	} else {
 	    this.score_counter.setText(String(this.count));
+	    if (this.ideal_history) this.ideal_history.setText("");
 	}
 	this.refresh_button_states();
     }
@@ -612,6 +616,7 @@ class Game extends Phaser.Scene {
 	this.prev_word.setText(this.start_word.toUpperCase());
 	this.word_history.setText("> "+this.start_word.toUpperCase());
 	this.word_history.y = HISTORY_BOX_Y;
+	if (this.ideal_history) { this.ideal_history.setText(""); this.ideal_history.y = HISTORY_BOX_Y; }
 	this.refresh_button_states();
     }
 
@@ -633,16 +638,14 @@ class Game extends Phaser.Scene {
 	console.log(`Solution: ${new_path}`);
     }
     show_solution() {
-	//console.log(this.word_path)
-	this.word_history.setText("");
-	this.word_history.setOrigin(0,0);
-	for (let i = 0; i < this.word_path.length; i++) {
-	    this.word_history.text = this.word_history.text + "\n> " + this.word_path[i].toUpperCase();
-	    if (this.word_history.displayHeight > HISTORY_BOX_H)
-		this.word_history.y = HISTORY_BOX_Y + HISTORY_BOX_H - this.word_history.displayHeight;
-	}
+	if (!this.word_path || this.word_path.length === 0) return;
+	const lines = this.word_path.map(w => "> " + w.toUpperCase()).join("\n");
+	this.ideal_history.setText(lines);
+	this.ideal_history.x = HISTORY_BOX_X + HISTORY_BOX_W;
+	this.ideal_history.y = HISTORY_BOX_Y;
+	if (this.ideal_history.displayHeight > HISTORY_BOX_H)
+	    this.ideal_history.y = HISTORY_BOX_Y + HISTORY_BOX_H - this.ideal_history.displayHeight;
 	this.error_msg.setText(`One ideal solution was ${this.word_path.length-1} steps.`);
-	
     }
     // Display the error message with some default settings
     display_error_message(error_str) {
@@ -798,6 +801,11 @@ class Game extends Phaser.Scene {
 	this.score_counter = this.add_text(SCORE_X,SCORE_Y,"0",WORD_FONTSIZE);
 	this.word_history = this.add_text(HISTORY_BOX_X,HISTORY_BOX_Y,"> "+this.prev_word.text,HISTORY_BOX_FONTSIZE);
 	this.word_history.setOrigin(0,0);
+	// Right-hand column for the ideal solution (filled in by
+	// show_solution; rendered green and aligned to the right edge of
+	// the history box).
+	this.ideal_history = this.add_text(HISTORY_BOX_X + HISTORY_BOX_W, HISTORY_BOX_Y, "", HISTORY_BOX_FONTSIZE, COLOR_GREEN);
+	this.ideal_history.setOrigin(1, 0);
 	this.error_msg = this.add_text(ERROR_BOX_X,ERROR_BOX_Y,"",HISTORY_BOX_FONTSIZE);
     }
 
@@ -825,17 +833,20 @@ class Game extends Phaser.Scene {
 	    if (cleaned !== e.target.value) e.target.value = cleaned;
 	});
 	
-	// Add scroll panel for word_history
+	// Add scroll panel for word_history (and the matching ideal column).
 	var graphics = this.make.graphics();
 	graphics.fillRect(HISTORY_BOX_X, HISTORY_BOX_Y, HISTORY_BOX_W, HISTORY_BOX_H);
 	var history_mask = new Phaser.Display.Masks.GeometryMask(this, graphics);
 	this.word_history.setMask(history_mask);
-	var history_zone = this.add.zone(HISTORY_BOX_X, HISTORY_BOX_Y, HISTORY_BOX_W, HISTORY_BOX_H).setOrigin(0).setInteractive();	
+	this.ideal_history.setMask(history_mask);
+	var history_zone = this.add.zone(HISTORY_BOX_X, HISTORY_BOX_Y, HISTORY_BOX_W, HISTORY_BOX_H).setOrigin(0).setInteractive();
 	history_zone.on('wheel', function (pointer) {
-	    if (this.word_history.displayHeight > HISTORY_BOX_H) {
-		this.word_history.y -= (pointer.deltaY / 5);
-		this.word_history.y = Phaser.Math.Clamp(this.word_history.y, 
-							HISTORY_BOX_Y + HISTORY_BOX_H - this.word_history.displayHeight, HISTORY_BOX_Y);
+	    const tallest = Math.max(this.word_history.displayHeight, this.ideal_history.displayHeight);
+	    if (tallest > HISTORY_BOX_H) {
+		const dy = pointer.deltaY / 5;
+		const min_y = HISTORY_BOX_Y + HISTORY_BOX_H - tallest;
+		this.word_history.y = Phaser.Math.Clamp(this.word_history.y - dy, min_y, HISTORY_BOX_Y);
+		this.ideal_history.y = Phaser.Math.Clamp(this.ideal_history.y - dy, min_y, HISTORY_BOX_Y);
 	    }
 	}, this);
 
