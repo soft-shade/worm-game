@@ -83,11 +83,8 @@ class Game extends Phaser.Scene {
     // isn't in the list (e.g. before the list starts or after it ends).
     load_daily() {
 	const raw = this.cache.text.get('daily_list') || '';
-	const today = new Date();
-	const dd = String(today.getDate()).padStart(2, '0');
-	const mm = String(today.getMonth() + 1).padStart(2, '0');
-	const yyyy = today.getFullYear();
-	const today_str = `${dd}-${mm}-${yyyy}`;
+	const p = this.et_today_parts();
+	const today_str = `${p.day}-${p.month}-${p.year}`;
 
 	let start = DAILY_START_WORD;
 	let goal = DAILY_GOAL_WORD;
@@ -277,11 +274,21 @@ class Game extends Phaser.Scene {
     // puzzle gets its own slot.
     daily_storage_key() {
 	if (!this.daily_start || !this.daily_goal) return null;
-	const t = new Date();
-	const yyyy = t.getFullYear();
-	const mm = String(t.getMonth() + 1).padStart(2, '0');
-	const dd = String(t.getDate()).padStart(2, '0');
-	return `worm_game_daily:${yyyy}-${mm}-${dd}`;
+	const p = this.et_today_parts();
+	return `worm_game_daily:${p.year}-${p.month}-${p.day}`;
+    }
+
+    // Today's calendar date in America/New_York. Daily puzzles roll
+    // over at ET midnight regardless of the player's local timezone so
+    // that everyone gets the same daily on the same calendar day.
+    et_today_parts() {
+	const fmt = new Intl.DateTimeFormat('en-CA', {
+	    timeZone: 'America/New_York',
+	    year: 'numeric', month: '2-digit', day: '2-digit',
+	});
+	const parts = {};
+	for (const p of fmt.formatToParts(new Date())) parts[p.type] = p.value;
+	return { year: parts.year, month: parts.month, day: parts.day };
     }
 
     // Read the current word history back out of the word_history text so
@@ -539,14 +546,20 @@ class Game extends Phaser.Scene {
     }
 
     iso_today() {
-	const d = new Date();
-	return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+	const p = this.et_today_parts();
+	return `${p.year}-${p.month}-${p.day}`;
     }
 
     iso_yesterday() {
-	const d = new Date();
-	d.setDate(d.getDate() - 1);
-	return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+	// Subtract one calendar day from the ET date. Anchor at noon UTC
+	// of the ET date so DST shifts can't bump us across a boundary.
+	const p = this.et_today_parts();
+	const d = new Date(`${p.year}-${p.month}-${p.day}T12:00:00Z`);
+	d.setUTCDate(d.getUTCDate() - 1);
+	const yyyy = d.getUTCFullYear();
+	const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+	const dd = String(d.getUTCDate()).padStart(2, '0');
+	return `${yyyy}-${mm}-${dd}`;
     }
 
     // Did today's daily end (won or gave up)?
