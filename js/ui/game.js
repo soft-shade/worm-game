@@ -538,8 +538,20 @@ class Game extends Phaser.Scene {
 
     save_stats_remote() {
 	if (!this.auth_user || !window.WG_AUTH) return;
-	const A = window.WG_AUTH;
-	try { A.setDoc(A.doc(A.db, "stats", this.auth_user.uid), this.stats); } catch (e) {}
+	// Debounce: coalesce bursts (post-win complaint clicks, rapid
+	// move sequences) into one write per ~1.2s, well above the
+	// Firestore rule's 1s/user throttle.
+	if (this._save_remote_pending) return;
+	this._save_remote_pending = true;
+	setTimeout(() => {
+	    this._save_remote_pending = false;
+	    if (!this.auth_user || !window.WG_AUTH) return;
+	    const A = window.WG_AUTH;
+	    try {
+		const payload = Object.assign({}, this.stats, { last_write: A.serverTimestamp() });
+		A.setDoc(A.doc(A.db, "stats", this.auth_user.uid), payload);
+	    } catch (e) {}
+	}, 1200);
     }
 
     sign_in_google() {

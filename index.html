@@ -18,16 +18,10 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
         from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-      import { getFirestore, doc, getDoc, setDoc }
+      import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
         from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-      // ---------------------------------------------------------------
-      // REPLACE THE PLACEHOLDERS BELOW with the config snippet from
-      // Firebase Console -> Project Settings -> Your Apps -> Web App.
-      // The apiKey is intentionally a public client identifier; access
-      // is restricted by the Firestore security rules:
-      //   match /stats/{uid} { allow read,write: if request.auth.uid == uid; }
-      // ---------------------------------------------------------------
+
       const firebaseConfig = {
 
   apiKey: "AIzaSyA2LKtkUF580OX4zBxOB_rw3UfMcUjg5no",
@@ -55,21 +49,21 @@
           auth, db,
           provider: new GoogleAuthProvider(),
           signInWithPopup, signOut, onAuthStateChanged,
-          doc, getDoc, setDoc,
+          doc, getDoc, setDoc, serverTimestamp,
         };
       } catch (e) {
         console.warn("Firebase init failed (config probably still placeholder):", e);
       }
     </script>
-     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VL580VY81P"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6NGQQXZ01X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-      gtag('config', 'G-VL580VY81P');
-    </script>
+  gtag('config', 'G-6NGQQXZ01X');
+</script>
     <style>
       html, body {
         margin: 0;
