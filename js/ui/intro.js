@@ -7,7 +7,8 @@ class Intro extends Phaser.Scene {
     create() {
 	const base_size = HISTORY_BOX_FONTSIZE;           // 24
 	const worm_size = base_size * 1.44;               // another 20% up from 1.2x
-	const fade_ms = 500;
+	const fade_small_ms = 290;                        // SORE..WORD
+	const fade_big_ms = 480;                          // WORM, GAME, PLAY
 
 	const mk = (text, size) => {
 	    const t = this.add.text(0, 0, text, {
@@ -34,23 +35,29 @@ class Intro extends Phaser.Scene {
 	const sword = mk("> SWORD", base_size); sword.setPosition(x_col, y_col + 2 * line_h);
 	const word  = mk("> WORD",  base_size); word.setPosition(x_col, y_col + 3 * line_h);
 
-	// Title row "> WORM GAME", horizontally centered on the canvas.
-	const title_y = y_col + 4 * line_h + 9;
+	// Title row "> WORM GAME". The "> " prefix hangs off to the left so
+	// that the words themselves (WORM GAME) are horizontally centered
+	// on the canvas rather than the whole string.
+	const title_y = y_col + 4 * line_h + 9 + 6;
 	const worm = mk("> WORM", worm_size);
 	const game_label = mk("GAME", worm_size);
-	const full = this.add.text(0, 0, "> WORM GAME", {
-	    fontSize: worm_size, fontFamily: "'Inter', sans-serif"
-	}).setResolution(RESOLUTION);
-	const full_w = full.width, title_h = full.height;
-	full.destroy();
-	const prefix = this.add.text(0, 0, "> WORM ", {
-	    fontSize: worm_size, fontFamily: "'Inter', sans-serif"
-	}).setResolution(RESOLUTION);
-	const prefix_w = prefix.width;
-	prefix.destroy();
-	const title_x = (WINDOW_WIDTH - full_w) / 2;
-	worm.setPosition(title_x, title_y);
-	game_label.setPosition(title_x + prefix_w, title_y);
+
+	const measure = (s) => {
+	    const t = this.add.text(0, 0, s, {
+		fontSize: worm_size, fontFamily: "'Inter', sans-serif"
+	    }).setResolution(RESOLUTION);
+	    const w = t.width, h = t.height;
+	    t.destroy();
+	    return { w, h };
+	};
+	const arrow = measure("> ");
+	const words = measure("WORM GAME");
+	const worm_sp = measure("WORM ");
+	const title_h = words.h;
+
+	const words_x = (WINDOW_WIDTH - words.w) / 2;   // where WORM begins
+	worm.setPosition(words_x - arrow.w, title_y);   // "> " sits to its left
+	game_label.setPosition(words_x + worm_sp.w, title_y);
 
 	// Play button below the title, styled like the DAILY PUZZLE button.
 	const play_center_x = WINDOW_WIDTH / 2;
@@ -62,19 +69,19 @@ class Intro extends Phaser.Scene {
 	// Fade-in schedule (ms). Words are 380ms apart, WORM/GAME use 600ms
 	// gaps to the preceding word, and the play button appears 600ms
 	// after GAME finishes.
-	const fade = (target, delay_ms) => this.tweens.add({
+	const fade = (target, delay_ms, duration) => this.tweens.add({
 	    targets: target, alpha: 1,
-	    delay: delay_ms, duration: fade_ms, ease: 'Sine.easeInOut'
+	    delay: delay_ms, duration: duration, ease: 'Sine.easeInOut'
 	});
-	fade(sore,        500);      // 0.5
-	fade(swore,       880);      // +0.38
-	fade(sword,      1260);
-	fade(word,       1640);      // done at 2140
-	fade(worm,       2740);      // 0.6s after WORD finishes, done at 3240
-	fade(game_label, 3840);      // 0.6s after WORM finishes, done at 4340
+	fade(sore,        500, fade_small_ms);
+	fade(swore,       880, fade_small_ms);
+	fade(sword,      1260, fade_small_ms);
+	fade(word,       1640, fade_small_ms);       // done at 1930
+	fade(worm,       2530, fade_big_ms);          // 0.6s after WORD finishes, done at 3010
+	fade(game_label, 3610, fade_big_ms);          // 0.6s after WORM finishes, done at 4090
 	this.tweens.add({
 	    targets: play.container, alpha: 1,
-	    delay: 4940, duration: fade_ms, ease: 'Sine.easeInOut',
+	    delay: 4690, duration: fade_big_ms, ease: 'Sine.easeInOut',
 	    onComplete: () => play.zone.setInteractive()
 	});
 
