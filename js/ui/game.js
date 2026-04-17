@@ -783,25 +783,32 @@ class Game extends Phaser.Scene {
 	items.push(tip);
 	container.add(items);
 
-	// Dismissal: click backdrop OR Enter / Space / Escape. Keep the
-	// modal_open flag true for one extra tick after close so the same
-	// keypress that dismissed the modal doesn't also submit a word via
-	// the normal Enter handler.
+	// Dismissal: click backdrop OR Enter / Space / Escape. Keyboard
+	// close is locked out for the first second so the same Enter that
+	// submitted the winning word (and opened this modal) doesn't also
+	// dismiss it. Pointer taps are never locked out.
+	// The modal_open flag lingers for one extra tick after close so the
+	// dismissing keystroke isn't picked up by handle_press_enter.
 	const kb = this.input.keyboard;
-	const close = () => {
+	const opened_at = performance.now();
+	const KEY_LOCKOUT_MS = 1000;
+	const close = (via_key) => {
 	    if (container.__closed) return;
+	    if (via_key && performance.now() - opened_at < KEY_LOCKOUT_MS) return;
 	    container.__closed = true;
-	    kb.off('keydown-ENTER', close);
-	    kb.off('keydown-SPACE', close);
-	    kb.off('keydown-ESC', close);
+	    kb.off('keydown-ENTER', close_by_key);
+	    kb.off('keydown-SPACE', close_by_key);
+	    kb.off('keydown-ESC', close_by_key);
 	    this.time.delayedCall(0, () => { this.modal_open = false; });
 	    container.destroy();
 	};
+	const close_by_key = () => close(true);
+	const close_by_pointer = () => close(false);
 	this.modal_open = true;
-	kb.on('keydown-ENTER', close);
-	kb.on('keydown-SPACE', close);
-	kb.on('keydown-ESC', close);
-	backdrop.on('pointerdown', close);
+	kb.on('keydown-ENTER', close_by_key);
+	kb.on('keydown-SPACE', close_by_key);
+	kb.on('keydown-ESC', close_by_key);
+	backdrop.on('pointerdown', close_by_pointer);
     }
 
     // A dismissible overlay explaining the rules
