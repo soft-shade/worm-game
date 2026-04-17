@@ -195,18 +195,31 @@ class Game extends Phaser.Scene {
     // Display the error message with some default settings
     display_error_message(error_str) {
 	this.shake_input.shake();
-	let prev_msg = this.error_msg.text;
+	// Capture the underlying (non-error) message only on the first
+	// error in a sequence, and cancel any pending restore so chained
+	// errors always get a fresh 2-second window. Without this, a
+	// second error fires its own restore later and re-displays the
+	// earlier error.
+	if (this.timedEvent) {
+	    this.timedEvent.remove();
+	    this.timedEvent = null;
+	} else {
+	    this.error_base_msg = this.error_msg.text;
+	}
 	this.error_msg.setText(error_str);
-	this.timedEvent = this.time.delayedCall(2000, function (event) {this.error_msg.setText(prev_msg)}, [], this); 
+	this.timedEvent = this.time.delayedCall(2000, function () {
+	    this.error_msg.setText(this.error_base_msg || "");
+	    this.timedEvent = null;
+	}, [], this);
     }
 
     // Do some stuff when enter is pressed on the input box
     handle_press_enter() {
-	// If not an English word
 	let input_word = this.input_box.getChildByName("input_word").value.toUpperCase();
         this.input_box.getChildByName("input_word").value = "";
+	if (input_word === "") return;
 	if (!this.check_word_in_dictionary(input_word)){
-	    this.display_error_message(`${input_word} is not an English word!`);
+	    this.display_error_message(`${input_word} is not a valid word!`);
 	    return;
 	}
 
