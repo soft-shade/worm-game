@@ -2,8 +2,8 @@
 Generate daily puzzle list for the word game.
 
 - Verifies each candidate pair has a path in word_graph_merged15.txt
-- Culls pairs with ideal path < 4 or > 12 steps
-- Writes assets/daily_list.txt as DD-MM-YYYY,start,end starting 12-04-2026
+- Culls pairs with ideal path outside [MIN_STEPS, MAX_STEPS]
+- Writes assets/daily_list.txt as DD-MM-YYYY,start,end starting at START_DATE
 - Difficulty staggered across the week: Mon/Tue easiest, Sun hardest.
 """
 import datetime as dt
@@ -13,7 +13,9 @@ from collections import deque
 
 GRAPH_PATH = 'assets/word_graph_merged15.txt'
 OUT_PATH = 'assets/daily_list.txt'
-START_DATE = dt.date(2026, 4, 12)  # Sunday
+START_DATE = dt.date(2026, 4, 16)  # Thursday
+MIN_STEPS = 5
+MAX_STEPS = 12
 
 # Brainstormed themed pairs — food, opposites, nature, body, objects, etc.
 CANDIDATES = [
@@ -274,8 +276,8 @@ def main():
     for a, b, L in sorted(results, key=lambda x: x[2]):
         print(f"  {L:>2}  {a} -> {b}")
 
-    # Filter to 4..12 steps
-    kept = [(a, b, L) for (a, b, L) in results if 4 <= L <= 12]
+    # Filter by step range
+    kept = [(a, b, L) for (a, b, L) in results if MIN_STEPS <= L <= MAX_STEPS]
     # Dedupe in case both (x,y) and (y,x) are candidates (same length)
     seen = set()
     deduped = []
@@ -291,13 +293,13 @@ def main():
     # Difficulty distribution target per weekday (0=Mon .. 6=Sun).
     # Lower weekdays take easier puzzles, Sunday the hardest.
     DAY_DIFF_PREF = {
-        0: (4, 5),    # Mon
-        1: (4, 5),    # Tue
-        2: (5, 7),    # Wed
-        3: (6, 8),    # Thu
-        4: (7, 9),    # Fri
-        5: (8, 10),   # Sat
-        6: (9, 12),   # Sun
+        0: (5, 5),    # Mon
+        1: (5, 6),    # Tue
+        2: (6, 7),    # Wed
+        3: (7, 8),    # Thu
+        4: (8, 9),    # Fri
+        5: (9, 10),   # Sat
+        6: (10, 12),  # Sun
     }
 
     # Shuffle within-length groups so picks aren't alphabetical.
