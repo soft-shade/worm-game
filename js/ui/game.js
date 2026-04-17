@@ -57,10 +57,13 @@ class Game extends Phaser.Scene {
 	this.enter_key.on('down', this.handle_press_enter, this);
 
 	//this.generate_puzzle();
+	this.mode = 'daily';
 	this.start_word = this.daily_start;
 	this.goal_word.setText(this.daily_goal);
 	this.word_path = calc_word_path(this.start_word,this.goal_word.text,this.word_array,this.word_graph)
-	this.reset_game_state();
+	const saved = this.load_daily_state();
+	if (saved) this.apply_daily_state(saved);
+	else this.reset_game_state();
     }
 
     // Pick today's daily puzzle pair out of assets/daily_list.txt.
@@ -145,11 +148,101 @@ class Game extends Phaser.Scene {
 	return { text, box, zone };
     }
 
-    // Update which mode button is highlighted
+    // Update which mode button is highlighted. `mode` is also stored as
+    // this.mode so other code can branch on the current game mode (e.g.
+    // only the daily puzzle persists its progress to localStorage).
     set_active_mode(mode) {
+	this.mode = mode;
 	this.regular.text.setColor(mode === 'practice' ? COLOR_GREEN : COLOR_RED);
 	this.daily_challenge.text.setColor(mode === 'daily' ? COLOR_GREEN : COLOR_RED);
 	this.free_play.text.setColor(mode === 'freeplay' ? COLOR_GREEN : COLOR_RED);
+    }
+
+    // ---- Daily puzzle persistence ----
+    // Saves the current chain of played words + victory / complaint state
+    // under a per-day localStorage key so the state survives mode
+    // switches and full page reloads. Keyed by ISO date so each day's
+    // puzzle gets its own slot.
+    daily_storage_key() {
+	if (!this.daily_start || !this.daily_goal) return null;
+	const t = new Date();
+	const yyyy = t.getFullYear();
+	const mm = String(t.getMonth() + 1).padStart(2, '0');
+	const dd = String(t.getDate()).padStart(2, '0');
+	return `worm_game_daily:${yyyy}-${mm}-${dd}`;
+    }
+
+    // Read the current word history back out of the word_history text so
+    // we don't need to duplicate it in another field.
+    daily_history_words() {
+	const raw = this.word_history.text || "";
+	const out = [];
+	for (const line of raw.split('\n')) {
+	    const m = line.match(/^>\s*(.*)$/);
+	    if (m && m[1].length > 0) out.push(m[1]);
+	}
+	return out;
+    }
+
+    save_daily_state() {
+	if (this.mode !== 'daily') return;
+	const key = this.daily_storage_key();
+	if (!key) return;
+	const state = {
+	    start: this.daily_start,
+	    goal: this.daily_goal,
+	    words: this.daily_history_words(),
+	    count: this.count,
+	    victory: !!this.VICTORY,
+	    complaint_counter: this.complaint_counter || 0,
+	};
+	try { localStorage.setItem(key, JSON.stringify(state)); } catch (e) {}
+    }
+
+    load_daily_state() {
+	const key = this.daily_storage_key();
+	if (!key) return null;
+	try {
+	    const raw = localStorage.getItem(key);
+	    if (!raw) return null;
+	    const s = JSON.parse(raw);
+	    // Guard against stale state: start/goal must match today's puzzle.
+	    if (s.start !== this.daily_start || s.goal !== this.daily_goal) return null;
+	    return s;
+	} catch (e) { return null; }
+    }
+
+    clear_daily_state() {
+	const key = this.daily_storage_key();
+	if (!key) return;
+	try { localStorage.removeItem(key); } catch (e) {}
+    }
+
+    // Apply a previously-saved daily state to the UI in place of a fresh
+    // reset_game_state(). Assumes this.start_word / goal_word already
+    // match the saved puzzle.
+    apply_daily_state(s) {
+	this.error_msg.setText("");
+	this.count = s.count || 0;
+	this.VICTORY = !!s.victory;
+	this.complaint_counter = s.complaint_counter || 0;
+	this.freeplay_stage = FREEPLAY_STAGES["none"];
+	const words = (s.words && s.words.length > 0) ? s.words : [this.start_word.toUpperCase()];
+	this.current_word = words[words.length - 1];
+	this.prev_word.setText(this.start_word.toUpperCase());
+	this.word_history.setText("> " + words.join("\n> "));
+	if (this.word_history.displayHeight > HISTORY_BOX_H)
+	    this.word_history.y = HISTORY_BOX_Y + HISTORY_BOX_H - this.word_history.displayHeight;
+	else
+	    this.word_history.y = HISTORY_BOX_Y;
+	if (this.VICTORY) {
+	    const last = words[words.length - 1];
+	    const path = calc_word_path(this.start_word, last, this.word_array, this.word_graph);
+	    this.error_msg.setText(`The shortest possible path is ${path.length - 1} steps.`);
+	    this.score_counter.setText(`WIN IN ${this.count}!`);
+	} else {
+	    this.score_counter.setText(String(this.count));
+	}
     }
 
     // Reset game variables
@@ -261,6 +354,7 @@ class Game extends Phaser.Scene {
 		this.score_counter.setText(complain_string);
 	    }
 	    this.complaint_counter++;
+	    this.save_daily_state();
 
 	    // Normal play
 	} else {
@@ -281,6 +375,7 @@ class Game extends Phaser.Scene {
 		this.score_counter.setText(`WIN IN ${++this.count}!`);
 		this.VICTORY = true;
 	    }
+	    this.save_daily_state();
 	}
     }
 
@@ -379,7 +474,10 @@ class Game extends Phaser.Scene {
 	const APX = 12, APY = 6;
 
 	this.reset = this.add_button(RESET_X, RESET_Y, "RESET", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
-	this.reset.zone.on('pointerdown', () => this.reset_game_state());
+	this.reset.zone.on('pointerdown', () => {
+	    if (this.mode === 'daily') this.clear_daily_state();
+	    this.reset_game_state();
+	});
 
 	this.restart = this.add_button(RESTART_X, RESTART_Y, "NEW PUZZLE", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
 	this.restart.zone.on('pointerdown', () => { this.generate_puzzle(); this.set_active_mode('practice'); this.reset_game_state(); });
@@ -458,7 +556,9 @@ class Game extends Phaser.Scene {
 	    this.goal_word.setText(this.daily_goal);
 	    this.word_path = calc_word_path(this.start_word, this.goal_word.text, this.word_array, this.word_graph);
 	    this.set_active_mode('daily');
-	    this.reset_game_state();
+	    const saved = this.load_daily_state();
+	    if (saved) this.apply_daily_state(saved);
+	    else this.reset_game_state();
 	});
 
 	// Free play — user enters start and goal words
