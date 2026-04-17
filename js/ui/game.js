@@ -753,20 +753,60 @@ class Game extends Phaser.Scene {
 	];
 	const max_count = Math.max(1, ...rows.map(r => r.count));
 
-	// Column positions. Labels sit right-aligned with a ~10px gap to
-	// the bar start; the bar track itself is fixed width and the count
-	// sits at a fixed right-edge position.
+	// Column positions. Labels are right-aligned 10 px left of the bar
+	// start; the bar track is fixed width; the count is right-aligned
+	// ~20 px past the bar end.
 	const bar_x = bx + 115;
-	const count_col_x = bx + bw - 30;
-	const bar_w_full = count_col_x - bar_x - 40;
+	const bar_end_x = bx + bw - 55;
+	const bar_w_full = bar_end_x - bar_x;
+	const count_col_x = bar_end_x + 20;
 	const bar_h = 18;
 	const row_gap = 30;
 	const rows_start_y = by + 196;
 	const label_right_x = bar_x - 10;
 
-	// Worm segment geometry — short rounded rects with a small gap so
-	// the bar reads like a caterpillar / worm body.
-	const seg_w = 14, seg_gap = 3, seg_radius = 6;
+	// Draw an earthworm-like shape on `g`: smooth rounded body that
+	// tapers to a narrow rounded tip at each end, with thin darker rib
+	// lines across the middle to evoke segmentation (without cutting
+	// the body into pieces).
+	const draw_worm = (g, x, y, w, h, color_int) => {
+	    if (w <= 0) return;
+	    const cy = y + h / 2;
+	    // Taper region width: how much of the length is used to ramp
+	    // the body outline from a narrow tip up to full body height.
+	    const taper = Math.min(h * 0.85, w / 2);
+	    // Vertical half-height at the tip itself (narrower than body).
+	    const tip_hh = h * 0.18;
+
+	    g.fillStyle(color_int, 0.95);
+	    g.beginPath();
+	    // Top edge: narrow left tip → curve up to body top → along → curve down to right tip.
+	    g.moveTo(x, cy - tip_hh);
+	    g.quadraticCurveTo(x, y, x + taper, y);
+	    g.lineTo(x + w - taper, y);
+	    g.quadraticCurveTo(x + w, y, x + w, cy - tip_hh);
+	    // Right tip edge.
+	    g.lineTo(x + w, cy + tip_hh);
+	    // Bottom edge, mirrored.
+	    g.quadraticCurveTo(x + w, y + h, x + w - taper, y + h);
+	    g.lineTo(x + taper, y + h);
+	    g.quadraticCurveTo(x, y + h, x, cy + tip_hh);
+	    g.closePath();
+	    g.fillPath();
+
+	    // Segmentation: thin darker lines across the body, clear of the
+	    // tapered tips so the rings don't overshoot the silhouette.
+	    const rib_spacing = 20;
+	    const rib_start = x + taper + 3;
+	    const rib_end = x + w - taper - 3;
+	    g.lineStyle(1.2, 0x000000, 0.28);
+	    for (let rx = rib_start + rib_spacing - 3; rx <= rib_end; rx += rib_spacing) {
+		g.beginPath();
+		g.moveTo(rx, y + 2);
+		g.lineTo(rx, y + h - 2);
+		g.strokePath();
+	    }
+	};
 
 	const items = [backdrop, panel, header, subtitle, summary, section_header];
 	for (let i = 0; i < rows.length; i++) {
@@ -778,17 +818,12 @@ class Game extends Phaser.Scene {
 		  .setOrigin(1, 0.5).setResolution(RESOLUTION);
 
 	    const bar = this.add.graphics();
-	    // Empty track along the full width, so a zero-count row still
-	    // reads as a slot in the chart.
-	    bar.fillStyle(mutedColor, 0.22).fillRoundedRect(bar_x, row_y, bar_w_full, bar_h, seg_radius);
+	    // Empty track along the full width, so zero-count rows still
+	    // read as a slot in the chart.
+	    bar.fillStyle(mutedColor, 0.20).fillRoundedRect(bar_x, row_y, bar_w_full, bar_h, bar_h / 2);
 	    if (r.count > 0) {
 		const fw = (r.count / max_count) * bar_w_full;
-		let sx = bar_x;
-		while (sx < bar_x + fw - 0.5) {
-		    const sw = Math.min(seg_w, bar_x + fw - sx);
-		    bar.fillStyle(r.color, 0.95).fillRoundedRect(sx, row_y, sw, bar_h, seg_radius);
-		    sx += sw + seg_gap;
-		}
+		draw_worm(bar, bar_x, row_y, fw, bar_h, r.color);
 	    }
 
 	    const count = this.add.text(count_col_x, row_y + bar_h / 2, String(r.count),
