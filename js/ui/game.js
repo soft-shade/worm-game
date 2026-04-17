@@ -967,31 +967,21 @@ class Game extends Phaser.Scene {
 	const rows_start_y = by + 196;
 	const label_right_x = bar_x - 10;
 
-	// Draw an earthworm-like shape on `g` using only Phaser 3 Graphics
-	// primitives (fillRect + fillTriangle) — Phaser 3.55's Graphics
-	// doesn't have quadraticCurveTo, so an earlier bezier-based version
-	// threw and broke the rest of the modal. The body is a full-height
-	// rectangle flanked by two pointed triangular tips; thin darker
-	// vertical lines across the middle provide segmentation.
+	// Draw the worm as a capsule (rounded rect with radius = h/2) so
+	// its end caps match the rounded ends of the grey track behind it,
+	// then add thin darker vertical lines across the middle as ribs.
 	const draw_worm = (g, x, y, w, h, color_int) => {
 	    if (w <= 0) return;
-	    const cy = y + h / 2;
-	    const taper = Math.min(h * 0.75, w / 2);
-
 	    g.fillStyle(color_int, 0.95);
-	    if (w > 2 * taper) {
-		g.fillRect(x + taper, y, w - 2 * taper, h);
-	    }
-	    // Left and right pointed tips.
-	    g.fillTriangle(x, cy, x + taper, y, x + taper, y + h);
-	    g.fillTriangle(x + w, cy, x + w - taper, y, x + w - taper, y + h);
+	    g.fillRoundedRect(x, y, w, h, h / 2);
 
-	    // Subtle ribbing across the body, avoiding the tapered tips.
+	    // Ribbing across the body, clear of the rounded caps.
+	    const cap = h / 2;
 	    const rib_spacing = 22;
-	    const rib_start = x + taper + 4;
-	    const rib_end = x + w - taper - 4;
+	    const rib_start = x + cap + 4;
+	    const rib_end = x + w - cap - 4;
 	    g.lineStyle(1.2, 0x000000, 0.28);
-	    for (let rx = rib_start + rib_spacing - 4; rx <= rib_end; rx += rib_spacing) {
+	    for (let rx = rib_start; rx <= rib_end; rx += rib_spacing) {
 		g.beginPath();
 		g.moveTo(rx, y + 2);
 		g.lineTo(rx, y + h - 2);
