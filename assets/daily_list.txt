@@ -58,11 +58,11 @@
 12-06-2026,glass,slipper
 13-06-2026,wine,cheese
 14-06-2026,bright,smart
-15-06-2026,hard,soft
+15-06-2026,spike,nail
 16-06-2026,oven,stove
 17-06-2026,clock,watch
 18-06-2026,escape,room
-19-06-2026,hammer,nail
+19-06-2026,chains,broken
 20-06-2026,knife,fork
 21-06-2026,wrist,ankle
 22-06-2026,wand,magic
@@ -344,7 +344,7 @@
 25-03-2027,neck,nape
 26-03-2027,skirt,pants
 27-03-2027,black,crow
-28-03-2027,room,hall
+28-03-2027,soft,shade
 29-03-2027,soul,mind
 30-03-2027,call,text
 31-03-2027,rain,snow
