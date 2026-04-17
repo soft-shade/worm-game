@@ -14,7 +14,7 @@ from collections import deque
 GRAPH_PATH = 'assets/word_graph_merged15.txt'
 OUT_PATH = 'assets/daily_list.txt'
 START_DATE = dt.date(2026, 4, 16)  # Thursday
-END_DATE = dt.date(2026, 12, 31)
+END_DATE = dt.date(2027, 12, 31)
 MIN_STEPS = 5
 MAX_STEPS = 12
 
@@ -379,6 +379,133 @@ CANDIDATES = [
     ('rose', 'bloom'), ('snow', 'flake'),
     # Short opposites
     ('sit', 'stand'), ('hold', 'drop'),
+
+    # ---- 2027 extension batch ----
+    # Classic riddle / pop phrase pair
+    ('escape', 'room'),
+    # Holidays / seasons
+    ('trick', 'treat'), ('valentine', 'heart'), ('easter', 'egg'),
+    ('candy', 'cane'), ('sled', 'snow'), ('carol', 'song'),
+    # More food
+    ('pepper', 'salt'), ('olive', 'oil'), ('steak', 'chop'),
+    ('pasta', 'sauce'), ('muffin', 'crumb'), ('lamb', 'stew'),
+    ('jam', 'toast'), ('wheat', 'grain'), ('flour', 'bread'),
+    ('salsa', 'chip'), ('curry', 'rice'),
+    # More drinks
+    ('tea', 'brew'), ('wine', 'cork'), ('beer', 'foam'),
+    ('whine', 'beer'),
+    # More animals
+    ('crow', 'raven'), ('mole', 'rat'), ('ant', 'bee'),
+    ('hawk', 'owl'), ('dove', 'crow'), ('frog', 'toad'),
+    ('wasp', 'bee'), ('moth', 'butterfly'), ('fly', 'gnat'),
+    ('calf', 'cow'), ('piglet', 'pig'), ('kitten', 'cat'),
+    ('puppy', 'dog'), ('bunny', 'rabbit'),
+    # More actions
+    ('grow', 'shrink'), ('gain', 'lose'), ('rise', 'drop'),
+    ('stand', 'kneel'), ('yell', 'shout'),
+    # More nature
+    ('hail', 'sleet'), ('mist', 'fog'), ('tide', 'wave'),
+    ('leaf', 'fall'), ('stem', 'root'), ('bloom', 'fade'),
+    # More household
+    ('fan', 'cool'), ('heat', 'fire'), ('vent', 'air'),
+    ('drip', 'drop'), ('leak', 'flood'),
+    # Office + tech
+    ('keys', 'lock'), ('card', 'chip'), ('phone', 'ring'),
+    ('mouse', 'track'), ('key', 'code'),
+    # Geology
+    ('sand', 'stone'), ('stone', 'rock'),
+    # Fish / sea
+    ('trout', 'salmon'), ('whale', 'dolphin'), ('shell', 'reef'),
+    # Birds
+    ('nest', 'twig'), ('feather', 'wing'), ('wing', 'flight'),
+    # Plants
+    ('oak', 'elm'), ('pine', 'cone'), ('leaf', 'stem'),
+    ('vine', 'leaf'),
+    # Metal / craft
+    ('iron', 'steel'), ('bronze', 'tin'), ('lead', 'gold'),
+    # More clothes
+    ('cap', 'hat'), ('scarf', 'tie'), ('glove', 'mitt'),
+    ('skirt', 'pants'), ('dress', 'robe'),
+    # Music / sound
+    ('note', 'beat'), ('song', 'verse'), ('bass', 'drum'),
+    ('chord', 'note'),
+    # Money
+    ('coin', 'bill'), ('cash', 'gold'), ('gold', 'silver'),
+    ('bank', 'vault'),
+    # More sports
+    ('tennis', 'serve'), ('golf', 'club'), ('bat', 'glove'),
+    ('puck', 'rink'), ('pitch', 'catch'),
+    # Misc new
+    ('queen', 'bee'), ('king', 'crown'), ('crown', 'throne'),
+    ('pearl', 'shell'), ('rose', 'petal'),
+    ('blade', 'grass'),
+    # Short connectors
+    ('bar', 'pub'), ('pub', 'bar'),
+    ('sad', 'merry'), ('dim', 'bright'),
+    # Transport more
+    ('train', 'tracks'), ('taxi', 'cab'), ('ferry', 'boat'),
+    # Misc themed
+    ('bride', 'veil'), ('groom', 'vow'),
+    # Work
+    ('boss', 'worker'), ('nurse', 'patient'),
+    # Holiday feelings
+    ('gift', 'wrap'), ('wrap', 'ribbon'),
+    # Party
+    ('cake', 'icing'), ('balloon', 'string'),
+    # Communication
+    ('call', 'text'), ('mail', 'letter'), ('letter', 'stamp'),
+    ('talk', 'speak'),
+    # Shapes
+    ('round', 'oval'), ('square', 'box'), ('ring', 'band'),
+    # Colors more
+    ('gray', 'white'), ('brown', 'tan'),
+    # Rooms
+    ('porch', 'door'), ('stairs', 'landing'),
+    # Entertainment
+    ('stage', 'show'), ('movie', 'film'), ('film', 'reel'),
+    ('show', 'act'),
+    # School more
+    ('desk', 'pen'), ('test', 'pass'), ('grade', 'score'),
+    # Medical
+    ('wound', 'scar'), ('heal', 'cure'), ('pill', 'dose'),
+    # Garden
+    ('spade', 'shovel'), ('pot', 'plant'), ('seed', 'sprout'),
+    # Books
+    ('poet', 'rhyme'), ('story', 'chapter'),
+    # Miscellaneous
+    ('loud', 'soft'), ('late', 'early'), ('old', 'new'),
+    ('neat', 'messy'),
+    # Humans / life
+    ('birth', 'cry'), ('live', 'learn'),
+    # Extra themed pairs
+    ('morning', 'evening'), ('noon', 'dusk'),
+    ('puzzle', 'clue'), ('code', 'key'),
+    ('haze', 'fog'), ('blaze', 'fire'),
+    ('craft', 'art'), ('paint', 'color'),
+    ('tree', 'wood'), ('wood', 'chair'),
+    ('gasp', 'wheeze'), ('yawn', 'nap'),
+    ('curse', 'bless'), ('sin', 'virtue'),
+    ('coin', 'toss'), ('dice', 'roll'),
+    ('cat', 'rat'), ('ant', 'fly'),
+    ('box', 'lid'), ('lid', 'cap'),
+    ('ice', 'snow'), ('sun', 'ray'),
+    ('ball', 'cup'), ('cup', 'bowl'),
+    ('pile', 'heap'), ('heap', 'stack'),
+    ('mud', 'bog'), ('bog', 'swamp'),
+    ('jewel', 'gem'), ('gem', 'ruby'),
+    ('ruby', 'red'), ('blue', 'cyan'),
+    ('wise', 'smart'), ('bright', 'smart'),
+    ('dumb', 'mute'), ('silent', 'still'),
+    ('rough', 'harsh'), ('gentle', 'kind'),
+    ('hedge', 'bush'), ('grass', 'turf'),
+    ('bank', 'slope'), ('slope', 'hill'),
+    ('hill', 'mound'), ('mound', 'pile'),
+    ('track', 'path'), ('trail', 'path'),
+    ('ride', 'drive'), ('drive', 'race'),
+    ('race', 'run'), ('run', 'sprint'),
+    ('jumper', 'shirt'),
+    ('tall', 'big'), ('small', 'tiny'),
+    ('pop', 'fizz'), ('fizz', 'bubble'),
 ]
 
 
