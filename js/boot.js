@@ -16,6 +16,7 @@ class Boot extends Phaser.Scene {
 		this.load.html("form", "html/form.html");
 	    this.load.text('legal_words', 'assets/legal_words.txt');
 	    this.load.text('word_graph', 'assets/word_graph_merged15.txt');
+	    this.load.text('daily_list', 'assets/daily_list.txt');
 	}
 
 

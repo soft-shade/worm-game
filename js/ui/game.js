@@ -41,6 +41,7 @@ class Game extends Phaser.Scene {
 	//------ Load game elements -----//
 	this.load_text();
 	this.load_dictionary();
+	this.load_daily();
 	this.load_complaints();
 	this.load_interactive();
 
@@ -49,17 +50,44 @@ class Game extends Phaser.Scene {
 	this.shake_input = this.plugins.get('rexshakepositionplugin').add(this.input_box, {
 	    duration: 100,
 	    magnitude: 15
-	});		
+	});
 
 	// Add enter key press listener
 	this.enter_key = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
 	this.enter_key.on('down', this.handle_press_enter, this);
 
 	//this.generate_puzzle();
-	this.start_word = DAILY_START_WORD;
-	this.goal_word.setText(DAILY_GOAL_WORD);
+	this.start_word = this.daily_start;
+	this.goal_word.setText(this.daily_goal);
 	this.word_path = calc_word_path(this.start_word,this.goal_word.text,this.word_array,this.word_graph)
 	this.reset_game_state();
+    }
+
+    // Pick today's daily puzzle pair out of assets/daily_list.txt.
+    // Falls back to DAILY_START_WORD / DAILY_GOAL_WORD if today's date
+    // isn't in the list (e.g. before the list starts or after it ends).
+    load_daily() {
+	const raw = this.cache.text.get('daily_list') || '';
+	const today = new Date();
+	const dd = String(today.getDate()).padStart(2, '0');
+	const mm = String(today.getMonth() + 1).padStart(2, '0');
+	const yyyy = today.getFullYear();
+	const today_str = `${dd}-${mm}-${yyyy}`;
+
+	let start = DAILY_START_WORD;
+	let goal = DAILY_GOAL_WORD;
+	for (const line of raw.replaceAll('\r', '').split('\n')) {
+	    const trimmed = line.trim();
+	    if (!trimmed) continue;
+	    const parts = trimmed.split(',');
+	    if (parts.length >= 3 && parts[0] === today_str) {
+		start = parts[1].toUpperCase();
+		goal = parts[2].toUpperCase();
+		break;
+	    }
+	}
+	this.daily_start = start;
+	this.daily_goal = goal;
     }
 
     // Add a text element with some default settings
@@ -413,8 +441,8 @@ class Game extends Phaser.Scene {
 	// Daily puzzle — curated start/goal pair
 	this.daily_challenge = this.add_button(GMODE2_X, GMODE2_Y, "DAILY PUZZLE", WORD_FONTSIZE, COLOR_GREEN, 0.5, 0, PAD_X, PAD_Y);
 	this.daily_challenge.zone.on('pointerdown', () => {
-	    this.start_word = DAILY_START_WORD;
-	    this.goal_word.setText(DAILY_GOAL_WORD);
+	    this.start_word = this.daily_start;
+	    this.goal_word.setText(this.daily_goal);
 	    this.word_path = calc_word_path(this.start_word, this.goal_word.text, this.word_array, this.word_graph);
 	    this.set_active_mode('daily');
 	    this.reset_game_state();
