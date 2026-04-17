@@ -480,7 +480,11 @@ class Game extends Phaser.Scene {
 
     default_stats() {
 	return {
-	    daily:    { streak: 0, best_streak: 0, last_win_date: null, wins: 0, giveups: 0, distribution: {} },
+	    // history: per-date map keyed by ISO ET date.
+	    //   { "2026-04-17": { result: "solved",  steps: 7, ideal: 5 },
+	    //     "2026-04-19": { result: "gave_up",           ideal: 9 } }
+	    // Dates with no entry mean the player didn't play that day.
+	    daily:    { streak: 0, best_streak: 0, last_win_date: null, wins: 0, giveups: 0, distribution: {}, history: {} },
 	    practice: { streak: 0, best_streak: 0,                     wins: 0, giveups: 0, distribution: {} }
 	};
     }
@@ -593,6 +597,9 @@ class Game extends Phaser.Scene {
 	    if (st.last_win_date === this.iso_yesterday()) st.streak += 1;
 	    else if (st.last_win_date !== today) st.streak = 1;
 	    st.last_win_date = today;
+	    st.history = st.history || {};
+	    const ideal = (this.word_path && this.word_path.length > 0) ? this.word_path.length - 1 : null;
+	    st.history[today] = { result: 'solved', steps: this.count, ideal: ideal };
 	} else {
 	    st.streak += 1;
 	}
@@ -607,6 +614,12 @@ class Game extends Phaser.Scene {
 	const st = this.stats[mode];
 	st.streak = 0;
 	st.giveups = (st.giveups || 0) + 1;
+	if (mode === 'daily') {
+	    st.history = st.history || {};
+	    const today = this.iso_today();
+	    const ideal = (this.word_path && this.word_path.length > 0) ? this.word_path.length - 1 : null;
+	    st.history[today] = { result: 'gave_up', ideal: ideal };
+	}
 	this.save_stats();
     }
 
@@ -920,7 +933,7 @@ class Game extends Phaser.Scene {
 
 	const mode_label = (mode === 'daily')
 	      ? `DAILY PUZZLE #${this.daily_puzzle_number()}`
-	      : 'PRACTICE';
+	      : 'UNLIMITED';
 
 	// Subtitle composition depends on whether the current game has
 	// ended. Mid-game ("STATISTICS" tap during play) shows just the
@@ -1177,7 +1190,7 @@ class Game extends Phaser.Scene {
 	    "valid English word.\n" +
 	    "\n" +
 	    "DAILY PUZZLE: a curated pair, refreshed daily.\n" +
-	    "PRACTICE: unlimited random pairs.\n" +
+	    "UNLIMITED: unlimited random pairs.\n" +
 	    "FREE PLAY: pick your own start and goal.\n" +
 	    "\n" +
 	    "Tap anywhere to close.";
@@ -1202,7 +1215,7 @@ class Game extends Phaser.Scene {
 	// Practice — persists the current puzzle across sessions; tapping
 	// the button simply brings you back to whatever practice game is
 	// currently in progress (or rolls a new one if there isn't one).
-	this.regular = this.add_button(GMODE1_X, GMODE1_Y, "PRACTICE", SIDE_FONT, COLOR_RED, 0, 0, SIDE_PAD_X, SIDE_PAD_Y);
+	this.regular = this.add_button(GMODE1_X, GMODE1_Y, "UNLIMITED", SIDE_FONT, COLOR_RED, 0, 0, SIDE_PAD_X, SIDE_PAD_Y);
 	this.regular.zone.on('pointerdown', () => {
 	    this.set_active_mode('practice');
 	    const saved = this.load_practice_state();
