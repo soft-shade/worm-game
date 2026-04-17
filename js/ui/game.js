@@ -488,6 +488,7 @@ class Game extends Phaser.Scene {
 
     // Do some stuff when enter is pressed on the input box
     handle_press_enter() {
+	if (this.modal_open) return;
 	let input_word = this.input_box.getChildByName("input_word").value.toUpperCase();
         this.input_box.getChildByName("input_word").value = "";
 	if (input_word === "") return;
@@ -685,15 +686,22 @@ class Game extends Phaser.Scene {
 
     // Build + show a dismissible stats overlay. `won` controls the title
     // (finished vs. gave up); mode selects which stats bucket to read.
+    // Always renders the same fixed set of outcome bars (Ideal, +1..+4,
+    // +5+, Gave Up) so layouts stay consistent as the player's history
+    // grows. Bar lengths are scaled so the largest bucket is full-width.
     show_stats_modal(mode, won) {
 	const st = this.stats[mode];
 	const container = this.add.container(0, 0).setDepth(1000);
-	const backdrop = this.add.rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0x000000, 0.75).setOrigin(0, 0).setInteractive();
+	const backdrop = this.add.rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0x000000, 0.75)
+	      .setOrigin(0, 0).setInteractive();
 
-	const bw = WINDOW_WIDTH * 0.85, bh = WINDOW_HEIGHT * 0.7;
+	const bw = WINDOW_WIDTH * 0.85, bh = WINDOW_HEIGHT * 0.8;
 	const bx = (WINDOW_WIDTH - bw) / 2, by = (WINDOW_HEIGHT - bh) / 2;
-	const fillColor = Phaser.Display.Color.HexStringToColor(COLOR_BOX_FILL).color;
+	const fillColor  = Phaser.Display.Color.HexStringToColor(COLOR_BOX_FILL).color;
 	const mutedColor = Phaser.Display.Color.HexStringToColor(COLOR_MUTED).color;
+	const greenColor = Phaser.Display.Color.HexStringToColor(COLOR_GREEN).color;
+	const redColor   = Phaser.Display.Color.HexStringToColor(COLOR_RED).color;
+
 	const panel = this.add.graphics();
 	panel.fillStyle(0x000000, 0.5).fillRoundedRect(bx + 4, by + 6, bw, bh, 14);
 	panel.fillStyle(fillColor, 1).fillRoundedRect(bx, by, bw, bh, 14);
@@ -701,45 +709,99 @@ class Game extends Phaser.Scene {
 
 	const mode_label = (mode === 'daily') ? 'DAILY PUZZLE' : 'PRACTICE';
 	const title_str = won ? `${mode_label} — SOLVED` : `${mode_label} — GAVE UP`;
-	const title = this.add.text(WINDOW_WIDTH / 2, by + 24, title_str,
+	const title = this.add.text(WINDOW_WIDTH / 2, by + 22, title_str,
 				    { fontSize: 24, fontFamily: "'Inter', sans-serif",
 				      color: won ? COLOR_GREEN : COLOR_RED, fontStyle: "600" })
 	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
 
-	const stats_lines = [
-	    `Streak: ${st.streak}   (best: ${st.best_streak})`,
-	    `Wins:   ${st.wins || 0}`,
-	    `Give ups: ${st.giveups || 0}`,
-	    ``,
-	    `Steps over ideal path:`,
-	];
-	let body_str = stats_lines.join('\n') + '\n';
-	const dist = st.distribution || {};
-	const keys = Object.keys(dist).map(Number).sort((a, b) => a - b);
-	if (keys.length === 0) {
-	    body_str += '  (none yet)';
-	} else {
-	    const max_count = Math.max(...keys.map(k => dist[String(k)]));
-	    for (const k of keys) {
-		const count = dist[String(k)];
-		const bar_len = Math.max(1, Math.round((count / max_count) * 18));
-		const bar = '█'.repeat(bar_len);
-		const label = (k === 0 ? ' ideal ' : `+${k}`.padStart(3));
-		body_str += `  ${label}  ${bar}  ${count}\n`;
-	    }
-	}
-
-	const body = this.add.text(WINDOW_WIDTH / 2, by + 70, body_str,
-				   { fontSize: 16, fontFamily: "'Inter', sans-serif",
-				     color: COLOR_TEXT, align: "center", lineSpacing: 4 })
+	const summary_str = `Streak: ${st.streak}   Best: ${st.best_streak}\n` +
+			    `Wins: ${st.wins || 0}   Give ups: ${st.giveups || 0}`;
+	const summary = this.add.text(WINDOW_WIDTH / 2, by + 64, summary_str,
+				      { fontSize: 16, fontFamily: "'Inter', sans-serif",
+					color: COLOR_TEXT, align: "center", lineSpacing: 4 })
 	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
 
-	const tip = this.add.text(WINDOW_WIDTH / 2, by + bh - 30, "Tap anywhere to close.",
-				  { fontSize: 14, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
-	      .setOrigin(0.5, 0.5).setResolution(RESOLUTION);
+	const section_header = this.add.text(WINDOW_WIDTH / 2, by + 124, "Outcome distribution",
+					     { fontSize: 13, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
+	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
 
-	container.add([backdrop, panel, title, body, tip]);
-	backdrop.on('pointerdown', () => container.destroy());
+	// Bucket the distribution + the give-up count.
+	const dist = st.distribution || {};
+	const bucket = (k) => dist[String(k)] || 0;
+	const over_5_plus = Object.keys(dist).map(Number)
+	      .filter(k => k >= 5)
+	      .reduce((s, k) => s + dist[String(k)], 0);
+	const rows = [
+	    { label: 'Ideal',   count: bucket(0),          color: greenColor },
+	    { label: '+1',      count: bucket(1),          color: greenColor },
+	    { label: '+2',      count: bucket(2),          color: greenColor },
+	    { label: '+3',      count: bucket(3),          color: greenColor },
+	    { label: '+4',      count: bucket(4),          color: greenColor },
+	    { label: '+5+',     count: over_5_plus,        color: greenColor },
+	    { label: 'Gave Up', count: st.giveups || 0,    color: redColor   },
+	];
+	const max_count = Math.max(1, ...rows.map(r => r.count));
+
+	// Column positions are fixed — bars always start and end at the
+	// same x no matter what the labels / counts look like.
+	const label_col_x = bx + 30;
+	const bar_x = bx + 120;
+	const count_col_x = bx + bw - 30;
+	const bar_w_full = count_col_x - bar_x - 36;
+	const bar_h = 16;
+	const row_gap = 28;
+	const rows_start_y = by + 152;
+
+	const items = [backdrop, panel, title, summary, section_header];
+	for (let i = 0; i < rows.length; i++) {
+	    const r = rows[i];
+	    const row_y = rows_start_y + i * row_gap;
+
+	    const label = this.add.text(label_col_x, row_y + bar_h / 2, r.label,
+					{ fontSize: 14, fontFamily: "'Inter', sans-serif", color: COLOR_TEXT })
+		  .setOrigin(0, 0.5).setResolution(RESOLUTION);
+
+	    const bar = this.add.graphics();
+	    // Track — always drawn, so an empty bucket still shows its slot.
+	    bar.fillStyle(mutedColor, 0.22).fillRoundedRect(bar_x, row_y, bar_w_full, bar_h, 3);
+	    if (r.count > 0) {
+		const fw = (r.count / max_count) * bar_w_full;
+		bar.fillStyle(r.color, 0.9).fillRoundedRect(bar_x, row_y, fw, bar_h, 3);
+	    }
+
+	    const count = this.add.text(count_col_x, row_y + bar_h / 2, String(r.count),
+					{ fontSize: 14, fontFamily: "'Inter', sans-serif", color: COLOR_TEXT })
+		  .setOrigin(1, 0.5).setResolution(RESOLUTION);
+
+	    items.push(label, bar, count);
+	}
+
+	const tip = this.add.text(WINDOW_WIDTH / 2, by + bh - 22,
+				  "Tap, or press Enter / Space / Esc to close.",
+				  { fontSize: 12, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
+	      .setOrigin(0.5, 0.5).setResolution(RESOLUTION);
+	items.push(tip);
+	container.add(items);
+
+	// Dismissal: click backdrop OR Enter / Space / Escape. Keep the
+	// modal_open flag true for one extra tick after close so the same
+	// keypress that dismissed the modal doesn't also submit a word via
+	// the normal Enter handler.
+	const kb = this.input.keyboard;
+	const close = () => {
+	    if (container.__closed) return;
+	    container.__closed = true;
+	    kb.off('keydown-ENTER', close);
+	    kb.off('keydown-SPACE', close);
+	    kb.off('keydown-ESC', close);
+	    this.time.delayedCall(0, () => { this.modal_open = false; });
+	    container.destroy();
+	};
+	this.modal_open = true;
+	kb.on('keydown-ENTER', close);
+	kb.on('keydown-SPACE', close);
+	kb.on('keydown-ESC', close);
+	backdrop.on('pointerdown', close);
     }
 
     // A dismissible overlay explaining the rules
