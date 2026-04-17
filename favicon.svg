@@ -30,13 +30,17 @@
     Position by alphabetic baseline (default), with y nudged down by
     half the cap-height so the *visible* glyph centres line up. For
     font-size 26 with cap-height ~0.72em, half-cap-height ~9.4 px:
-        W visible centre (24, 27.5)  →  baseline y = 27.5 + 9.4 = 36.9
-        G visible centre (40, 36.5)  →  baseline y = 36.5 + 9.4 = 45.9
+        W visible centre (26, 27.5)  →  baseline y = 27.5 + 9.4 = 36.9
+        G visible centre (42, 36.5)  →  baseline y = 36.5 + 9.4 = 45.9
+    Both x-coords nudged right by 2 from the geometric centre (32):
+    text-anchor='middle' uses the glyph advance width, but a W is
+    visually wider than a G, so the painted weight ends up slightly
+    left of geometric centre. The +2 shift balances the optics.
   -->
-  <text x="24" y="36.9" font-family="Fredoka, 'Comic Sans MS', 'Avenir Next Rounded', sans-serif"
+  <text x="26" y="36.9" font-family="Fredoka, 'Comic Sans MS', 'Avenir Next Rounded', sans-serif"
         font-weight="700" font-size="26" fill="#a6e3a1"
         text-anchor="middle">W</text>
-  <text x="40" y="45.9" font-family="Fredoka, 'Comic Sans MS', 'Avenir Next Rounded', sans-serif"
+  <text x="42" y="45.9" font-family="Fredoka, 'Comic Sans MS', 'Avenir Next Rounded', sans-serif"
         font-weight="700" font-size="26" fill="#a6e3a1"
         text-anchor="middle">G</text>
 </svg>
