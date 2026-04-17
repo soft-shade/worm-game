@@ -13,7 +13,8 @@ function startGame() { new Phaser.Game(config); }
 if (document.fonts && document.fonts.load) {
     Promise.all([
         document.fonts.load("24px 'Inter'"),
-        document.fonts.load("600 24px 'Inter'")
+        document.fonts.load("600 24px 'Inter'"),
+        document.fonts.load("700 36px 'Fredoka'")
     ]).then(startGame).catch(startGame);
 } else {
     startGame();
