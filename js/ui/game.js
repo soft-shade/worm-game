@@ -21,8 +21,12 @@ class Game extends Phaser.Scene {
 	
 	this.count;
 	this.VICTORY;
+	this.GAVE_UP;
+	this.stats_recorded;
 	this.complaint_counter;
 	this.freeplay_stage;
+	this.stats;
+	this.mode;
 	
 	this.rules_button;
 	this.rules_modal;
@@ -57,7 +61,9 @@ class Game extends Phaser.Scene {
 	this.enter_key.on('down', this.handle_press_enter, this);
 
 	//this.generate_puzzle();
+	this.stats = this.load_stats();
 	this.mode = 'daily';
+	this.set_active_mode('daily');
 	this.start_word = this.daily_start;
 	this.goal_word.setText(this.daily_goal);
 	this.word_path = calc_word_path(this.start_word,this.goal_word.text,this.word_array,this.word_graph)
@@ -143,9 +149,93 @@ class Game extends Phaser.Scene {
 	    .setOrigin(0, 0);
 
 	const zone = this.add.zone(bx, by, bw, bh).setOrigin(0, 0).setInteractive();
-	zone.on('pointerover', () => draw(0.95));
-	zone.on('pointerout', () => draw(0.5));
-	return { text, box, zone };
+	zone.on('pointerover', () => { if (zone.input && zone.input.enabled) draw(0.95); });
+	zone.on('pointerout',  () => draw(0.5));
+	return { text, box, zone, draw, color: text_color };
+    }
+
+    // Grey out a button: mute text, reset box, disable input events.
+    // Passing enabled=true restores the original color and interactivity.
+    set_button_enabled(btn, enabled) {
+	if (!btn) return;
+	if (enabled) {
+	    btn.text.setColor(btn.color);
+	    btn.text.alpha = 1;
+	    btn.zone.input.enabled = true;
+	} else {
+	    btn.text.setColor(COLOR_MUTED);
+	    btn.text.alpha = 0.5;
+	    btn.draw(0.5);
+	    btn.zone.input.enabled = false;
+	}
+    }
+
+    // Reset / Solution (or Give Up) state depend on mode + whether the
+    // game has ended. Free Play's Solution button is a soft-disabled
+    // variant that's still clickable (to show a lockout message) until
+    // today's daily puzzle has been completed.
+    refresh_button_states() {
+	if (!this.reset || !this.solved) return;
+	const ended = this.game_over();
+	this.set_button_enabled(this.reset, !ended);
+
+	if (this.mode === 'freeplay') {
+	    const unlocked = this.daily_ended_today();
+	    if (unlocked) {
+		this.solved.text.setColor(this.solved.color);
+		this.solved.text.alpha = 1;
+	    } else {
+		this.solved.text.setColor(COLOR_MUTED);
+		this.solved.text.alpha = 0.5;
+		this.solved.draw(0.5);
+	    }
+	    this.solved.zone.input.enabled = true;
+	} else {
+	    this.set_button_enabled(this.solved, !ended);
+	}
+    }
+
+    // Swap the SOLUTION / GIVE UP button to match the current mode. The
+    // button is destroyed and re-created so the bubble resizes to fit
+    // the new label. The shared click handler branches on this.mode.
+    update_solution_button() {
+	const APX = 12, APY = 6;
+	if (this.solved) {
+	    this.solved.text.destroy();
+	    this.solved.box.destroy();
+	    this.solved.zone.destroy();
+	}
+	const label = (this.mode === 'freeplay') ? 'SOLUTION' : 'GIVE UP';
+	this.solved = this.add_button(SOLUTION_X, SOLUTION_Y, label, ACTION_FONTSIZE, COLOR_RED, 1, 0, APX, APY);
+	this.solved.zone.on('pointerdown', () => this.handle_solution_or_giveup());
+    }
+
+    handle_solution_or_giveup() {
+	if (this.mode === 'freeplay') {
+	    if (!this.daily_ended_today()) {
+		this.display_error_message("Complete today's daily puzzle first.");
+		return;
+	    }
+	    this.show_solution();
+	    return;
+	}
+	// Daily / Practice: give up.
+	if (this.game_over()) return;
+	this.give_up();
+    }
+
+    give_up() {
+	const ideal = (this.word_path && this.word_path.length > 0) ? this.word_path.length - 1 : null;
+	this.show_solution();
+	this.GAVE_UP = true;
+	this.score_counter.setText("GAVE UP");
+	if (!this.stats_recorded && (this.mode === 'daily' || this.mode === 'practice')) {
+	    this.record_giveup(this.mode);
+	    this.stats_recorded = true;
+	    this.show_stats_modal(this.mode, false);
+	}
+	this.save_daily_state();
+	this.refresh_button_states();
     }
 
     // Update which mode button is highlighted. `mode` is also stored as
@@ -194,6 +284,8 @@ class Game extends Phaser.Scene {
 	    words: this.daily_history_words(),
 	    count: this.count,
 	    victory: !!this.VICTORY,
+	    gave_up: !!this.GAVE_UP,
+	    stats_recorded: !!this.stats_recorded,
 	    complaint_counter: this.complaint_counter || 0,
 	};
 	try { localStorage.setItem(key, JSON.stringify(state)); } catch (e) {}
@@ -225,6 +317,8 @@ class Game extends Phaser.Scene {
 	this.error_msg.setText("");
 	this.count = s.count || 0;
 	this.VICTORY = !!s.victory;
+	this.GAVE_UP = !!s.gave_up;
+	this.stats_recorded = !!s.stats_recorded;
 	this.complaint_counter = s.complaint_counter || 0;
 	this.freeplay_stage = FREEPLAY_STAGES["none"];
 	const words = (s.words && s.words.length > 0) ? s.words : [this.start_word.toUpperCase()];
@@ -240,9 +334,89 @@ class Game extends Phaser.Scene {
 	    const path = calc_word_path(this.start_word, last, this.word_array, this.word_graph);
 	    this.error_msg.setText(`The shortest possible path is ${path.length - 1} steps.`);
 	    this.score_counter.setText(`WIN IN ${this.count}!`);
+	} else if (this.GAVE_UP) {
+	    this.error_msg.setText(`One ideal solution was ${this.word_path.length - 1} steps.`);
+	    this.score_counter.setText("GAVE UP");
 	} else {
 	    this.score_counter.setText(String(this.count));
 	}
+	this.refresh_button_states();
+    }
+
+    // ---- Persistent stats (daily + practice) ----
+    STATS_KEY() { return 'worm_game_stats'; }
+
+    default_stats() {
+	return {
+	    daily:    { streak: 0, best_streak: 0, last_win_date: null, wins: 0, giveups: 0, distribution: {} },
+	    practice: { streak: 0, best_streak: 0,                     wins: 0, giveups: 0, distribution: {} }
+	};
+    }
+
+    load_stats() {
+	let s = this.default_stats();
+	try {
+	    const raw = localStorage.getItem(this.STATS_KEY());
+	    if (raw) {
+		const parsed = JSON.parse(raw);
+		s.daily    = Object.assign(s.daily,    parsed.daily    || {});
+		s.practice = Object.assign(s.practice, parsed.practice || {});
+		s.daily.distribution    = s.daily.distribution    || {};
+		s.practice.distribution = s.practice.distribution || {};
+	    }
+	} catch (e) {}
+	return s;
+    }
+
+    save_stats() {
+	try { localStorage.setItem(this.STATS_KEY(), JSON.stringify(this.stats)); } catch (e) {}
+    }
+
+    iso_today() {
+	const d = new Date();
+	return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    iso_yesterday() {
+	const d = new Date();
+	d.setDate(d.getDate() - 1);
+	return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    // Did today's daily end (won or gave up)?
+    daily_ended_today() {
+	const key = this.daily_storage_key();
+	if (!key) return false;
+	try {
+	    const raw = localStorage.getItem(key);
+	    if (!raw) return false;
+	    const s = JSON.parse(raw);
+	    return !!(s.victory || s.gave_up);
+	} catch (e) { return false; }
+    }
+
+    record_win(mode, over_par) {
+	const st = this.stats[mode];
+	if (mode === 'daily') {
+	    const today = this.iso_today();
+	    if (st.last_win_date === this.iso_yesterday()) st.streak += 1;
+	    else if (st.last_win_date !== today) st.streak = 1;
+	    st.last_win_date = today;
+	} else {
+	    st.streak += 1;
+	}
+	if (st.streak > st.best_streak) st.best_streak = st.streak;
+	st.wins = (st.wins || 0) + 1;
+	const key = String(over_par);
+	st.distribution[key] = (st.distribution[key] || 0) + 1;
+	this.save_stats();
+    }
+
+    record_giveup(mode) {
+	const st = this.stats[mode];
+	st.streak = 0;
+	st.giveups = (st.giveups || 0) + 1;
+	this.save_stats();
     }
 
     // Reset game variables
@@ -250,13 +424,19 @@ class Game extends Phaser.Scene {
 	this.error_msg.setText("");
 	this.count = 0;
 	this.VICTORY = false;
+	this.GAVE_UP = false;
+	this.stats_recorded = false;
 	this.complaint_counter = 0;
 	this.freeplay_stage = FREEPLAY_STAGES["none"];
 	this.score_counter.setText("0");
 	this.current_word = this.start_word.toUpperCase();
 	this.prev_word.setText(this.start_word.toUpperCase());
 	this.word_history.setText("> "+this.start_word.toUpperCase());
+	this.word_history.y = HISTORY_BOX_Y;
+	this.refresh_button_states();
     }
+
+    game_over() { return this.VICTORY || this.GAVE_UP; }
     
     // Generate new puzzle
     generate_puzzle() {
@@ -371,9 +551,17 @@ class Game extends Phaser.Scene {
 	    } else {
 		let word_path = calc_word_path(this.start_word,input_word,this.word_array,this.word_graph)
 
-		this.error_msg.setText(`The shortest possible path is ${word_path.length-1} steps.`);
+		const ideal_steps = word_path.length - 1;
+		this.error_msg.setText(`The shortest possible path is ${ideal_steps} steps.`);
 		this.score_counter.setText(`WIN IN ${++this.count}!`);
 		this.VICTORY = true;
+		if (!this.stats_recorded && (this.mode === 'daily' || this.mode === 'practice')) {
+		    const over = Math.max(0, this.count - ideal_steps);
+		    this.record_win(this.mode, over);
+		    this.stats_recorded = true;
+		    this.show_stats_modal(this.mode, true);
+		}
+		this.refresh_button_states();
 	    }
 	    this.save_daily_state();
 	}
@@ -475,15 +663,17 @@ class Game extends Phaser.Scene {
 
 	this.reset = this.add_button(RESET_X, RESET_Y, "RESET", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
 	this.reset.zone.on('pointerdown', () => {
+	    if (this.game_over()) return;
 	    if (this.mode === 'daily') this.clear_daily_state();
 	    this.reset_game_state();
 	});
 
 	this.restart = this.add_button(RESTART_X, RESTART_Y, "NEW PUZZLE", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
-	this.restart.zone.on('pointerdown', () => { this.generate_puzzle(); this.set_active_mode('practice'); this.reset_game_state(); });
+	this.restart.zone.on('pointerdown', () => { this.generate_puzzle(); this.set_active_mode('practice'); this.update_solution_button(); this.reset_game_state(); });
 
-	this.solved = this.add_button(SOLUTION_X, SOLUTION_Y, "SOLUTION", ACTION_FONTSIZE, COLOR_RED, 1, 0, APX, APY);
-	this.solved.zone.on('pointerdown', () => this.show_solution());
+	// Solution / Give Up button is owned by update_solution_button so
+	// the label (and size) tracks the current mode.
+	this.update_solution_button();
 
 	// Rules button replaces the old mute toggle
 	this.rules_button = this.add_button(SOUND_TOGGLE_X, SOUND_TOGGLE_Y, "RULES", ACTION_FONTSIZE, COLOR_RED, 1, 0, APX, APY);
@@ -491,6 +681,65 @@ class Game extends Phaser.Scene {
 	this.rules_button.zone.on('pointerdown', () => this.rules_modal.setVisible(true));
 
 	this.load_gamemodes();
+    }
+
+    // Build + show a dismissible stats overlay. `won` controls the title
+    // (finished vs. gave up); mode selects which stats bucket to read.
+    show_stats_modal(mode, won) {
+	const st = this.stats[mode];
+	const container = this.add.container(0, 0).setDepth(1000);
+	const backdrop = this.add.rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0x000000, 0.75).setOrigin(0, 0).setInteractive();
+
+	const bw = WINDOW_WIDTH * 0.85, bh = WINDOW_HEIGHT * 0.7;
+	const bx = (WINDOW_WIDTH - bw) / 2, by = (WINDOW_HEIGHT - bh) / 2;
+	const fillColor = Phaser.Display.Color.HexStringToColor(COLOR_BOX_FILL).color;
+	const mutedColor = Phaser.Display.Color.HexStringToColor(COLOR_MUTED).color;
+	const panel = this.add.graphics();
+	panel.fillStyle(0x000000, 0.5).fillRoundedRect(bx + 4, by + 6, bw, bh, 14);
+	panel.fillStyle(fillColor, 1).fillRoundedRect(bx, by, bw, bh, 14);
+	panel.lineStyle(1.5, mutedColor, 0.8).strokeRoundedRect(bx, by, bw, bh, 14);
+
+	const mode_label = (mode === 'daily') ? 'DAILY PUZZLE' : 'PRACTICE';
+	const title_str = won ? `${mode_label} — SOLVED` : `${mode_label} — GAVE UP`;
+	const title = this.add.text(WINDOW_WIDTH / 2, by + 24, title_str,
+				    { fontSize: 24, fontFamily: "'Inter', sans-serif",
+				      color: won ? COLOR_GREEN : COLOR_RED, fontStyle: "600" })
+	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
+
+	const stats_lines = [
+	    `Streak: ${st.streak}   (best: ${st.best_streak})`,
+	    `Wins:   ${st.wins || 0}`,
+	    `Give ups: ${st.giveups || 0}`,
+	    ``,
+	    `Steps over ideal path:`,
+	];
+	let body_str = stats_lines.join('\n') + '\n';
+	const dist = st.distribution || {};
+	const keys = Object.keys(dist).map(Number).sort((a, b) => a - b);
+	if (keys.length === 0) {
+	    body_str += '  (none yet)';
+	} else {
+	    const max_count = Math.max(...keys.map(k => dist[String(k)]));
+	    for (const k of keys) {
+		const count = dist[String(k)];
+		const bar_len = Math.max(1, Math.round((count / max_count) * 18));
+		const bar = '█'.repeat(bar_len);
+		const label = (k === 0 ? ' ideal ' : `+${k}`.padStart(3));
+		body_str += `  ${label}  ${bar}  ${count}\n`;
+	    }
+	}
+
+	const body = this.add.text(WINDOW_WIDTH / 2, by + 70, body_str,
+				   { fontSize: 16, fontFamily: "'Inter', sans-serif",
+				     color: COLOR_TEXT, align: "center", lineSpacing: 4 })
+	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
+
+	const tip = this.add.text(WINDOW_WIDTH / 2, by + bh - 30, "Tap anywhere to close.",
+				  { fontSize: 14, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
+	      .setOrigin(0.5, 0.5).setResolution(RESOLUTION);
+
+	container.add([backdrop, panel, title, body, tip]);
+	backdrop.on('pointerdown', () => container.destroy());
     }
 
     // A dismissible overlay explaining the rules
@@ -546,6 +795,7 @@ class Game extends Phaser.Scene {
 	this.regular.zone.on('pointerdown', () => {
 	    this.generate_puzzle();
 	    this.set_active_mode('practice');
+	    this.update_solution_button();
 	    this.reset_game_state();
 	});
 
@@ -556,6 +806,7 @@ class Game extends Phaser.Scene {
 	    this.goal_word.setText(this.daily_goal);
 	    this.word_path = calc_word_path(this.start_word, this.goal_word.text, this.word_array, this.word_graph);
 	    this.set_active_mode('daily');
+	    this.update_solution_button();
 	    const saved = this.load_daily_state();
 	    if (saved) this.apply_daily_state(saved);
 	    else this.reset_game_state();
@@ -567,6 +818,7 @@ class Game extends Phaser.Scene {
 	    this.start_word = "???";
 	    this.goal_word.setText("???");
 	    this.set_active_mode('freeplay');
+	    this.update_solution_button();
 	    this.reset_game_state();
 	    this.error_msg.setText("Enter starting word.");
 	    this.freeplay_stage = FREEPLAY_STAGES["first_word"];
