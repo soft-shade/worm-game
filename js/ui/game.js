@@ -278,6 +278,14 @@ class Game extends Phaser.Scene {
 	return `worm_game_daily:${p.year}-${p.month}-${p.day}`;
     }
 
+    // Sequential puzzle number, with 2026-04-17 (ET) as #1.
+    daily_puzzle_number() {
+	const p = this.et_today_parts();
+	const today = new Date(`${p.year}-${p.month}-${p.day}T12:00:00Z`);
+	const ref = new Date('2026-04-17T12:00:00Z');
+	return Math.round((today - ref) / 86400000) + 1;
+    }
+
     // Today's calendar date in America/New_York. Daily puzzles roll
     // over at ET midnight regardless of the player's local timezone so
     // that everyone gets the same daily on the same calendar day.
@@ -910,7 +918,9 @@ class Game extends Phaser.Scene {
 				       color: COLOR_GREEN, fontStyle: "700" })
 	      .setOrigin(0.5, 0).setResolution(RESOLUTION);
 
-	const mode_label = (mode === 'daily') ? 'DAILY PUZZLE' : 'PRACTICE';
+	const mode_label = (mode === 'daily')
+	      ? `DAILY PUZZLE #${this.daily_puzzle_number()}`
+	      : 'PRACTICE';
 	const subtitle_str = won ? `${mode_label} — SOLVED` : `${mode_label} — GAVE UP`;
 	const subtitle = this.add.text(WINDOW_WIDTH / 2, by + 76, subtitle_str,
 				       { fontSize: 20, fontFamily: "'Inter', sans-serif",
