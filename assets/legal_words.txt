@@ -55935,6 +55935,7 @@ farrier
 farrieries
 farriers
 farriery
+farro
 farrow
 farrowed
 farrowing
@@ -144782,7 +144783,6 @@ singularizes
 singularizing
 singularly
 singulars
-sinh
 sinhs
 sinicize
 sinicized

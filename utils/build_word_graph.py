@@ -20,6 +20,14 @@ import unicodedata
 from collections import defaultdict
 
 
+# Words that should never end up in the graph even if they pass the
+# zipf filter or appear in a source file. Typically obscure abbreviations
+# or loan-words that look like typos in a casual word game context.
+BLOCKLIST = {
+    "sinh",   # hyperbolic-sine abbreviation; reads like a typo.
+}
+
+
 def strip_accents(s):
     nfkd = unicodedata.normalize("NFKD", s)
     return "".join(c for c in nfkd if not unicodedata.combining(c))
@@ -30,7 +38,7 @@ def read_wordlist(path):
         out = set()
         for line in f:
             w = strip_accents(line.strip().lower())
-            if w and w.isalpha() and w.isascii():
+            if w and w.isalpha() and w.isascii() and w not in BLOCKLIST:
                 out.add(w)
         return out
 

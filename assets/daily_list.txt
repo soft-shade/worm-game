@@ -9,7 +9,7 @@
 24-04-2026,story,chapter
 25-04-2026,chick,chicken
 26-04-2026,sheet,pillow
-27-04-2026,fast,slow
+27-04-2026,smoke,fog
 28-04-2026,dumb,mute
 29-04-2026,flour,bread
 30-04-2026,beach,shore
@@ -77,7 +77,7 @@
 01-07-2026,maple,leaf
 02-07-2026,gentle,kind
 03-07-2026,laugh,cry
-04-07-2026,salt,pepper
+04-07-2026,rockets,glare
 05-07-2026,pepper,mint
 06-07-2026,trail,path
 07-07-2026,snow,flake
@@ -99,7 +99,7 @@
 23-07-2026,loud,quiet
 24-07-2026,hedge,bush
 25-07-2026,jumper,shirt
-26-07-2026,heavy,light
+26-07-2026,whisper,bellow
 27-07-2026,door,wall
 28-07-2026,flute,horn
 29-07-2026,game,quest
@@ -203,8 +203,8 @@
 04-11-2026,true,false
 05-11-2026,line,verse
 06-11-2026,bank,vault
-07-11-2026,light,dark
-08-11-2026,crust,slice
+07-11-2026,harbor,dock
+08-11-2026,divine,light
 09-11-2026,rose,bloom
 10-11-2026,hide,seek
 11-11-2026,fruit,core
@@ -302,10 +302,10 @@
 11-02-2027,sharp,blunt
 12-02-2027,seed,sprout
 13-02-2027,weed,flower
-14-02-2027,rook,pawn
+14-02-2027,friends,lovers
 15-02-2027,fire,water
 16-02-2027,phone,call
-17-02-2027,fleck,spot
+17-02-2027,prayer,fast
 18-02-2027,tree,wood
 19-02-2027,brown,mud
 20-02-2027,run,sprint
@@ -330,10 +330,10 @@
 11-03-2027,bell,chime
 12-03-2027,axe,chop
 13-03-2027,hand,foot
-14-03-2027,bride,groom
+14-03-2027,radius,area
 15-03-2027,dress,robe
 16-03-2027,drum,horn
-17-03-2027,knee,foot
+17-03-2027,lucky,clover
 18-03-2027,scarf,tie
 19-03-2027,mouse,pad
 20-03-2027,blink,stare
