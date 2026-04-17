@@ -6,6 +6,44 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser-arcade-physics.min.js"></script>
+    <!-- Firebase: Auth (Google sign-in) + Firestore (per-user stats). -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+        from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+      import { getFirestore, doc, getDoc, setDoc }
+        from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+      // ---------------------------------------------------------------
+      // REPLACE THE PLACEHOLDERS BELOW with the config snippet from
+      // Firebase Console -> Project Settings -> Your Apps -> Web App.
+      // The apiKey is intentionally a public client identifier; access
+      // is restricted by the Firestore security rules:
+      //   match /stats/{uid} { allow read,write: if request.auth.uid == uid; }
+      // ---------------------------------------------------------------
+      const firebaseConfig = {
+        apiKey:            "REPLACE_ME",
+        authDomain:        "REPLACE_ME.firebaseapp.com",
+        projectId:         "REPLACE_ME",
+        storageBucket:     "REPLACE_ME.appspot.com",
+        messagingSenderId: "REPLACE_ME",
+        appId:             "REPLACE_ME",
+      };
+
+      try {
+        const app  = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db   = getFirestore(app);
+        window.WG_AUTH = {
+          auth, db,
+          provider: new GoogleAuthProvider(),
+          signInWithPopup, signOut, onAuthStateChanged,
+          doc, getDoc, setDoc,
+        };
+      } catch (e) {
+        console.warn("Firebase init failed (config probably still placeholder):", e);
+      }
+    </script>
      <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-VL580VY81P"></script>
     <script>

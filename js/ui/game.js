@@ -62,6 +62,7 @@ class Game extends Phaser.Scene {
 
 	//this.generate_puzzle();
 	this.stats = this.load_stats();
+	this.init_auth();
 	this.mode = 'daily';
 	this.set_active_mode('daily');
 	this.start_word = this.daily_start;
@@ -482,6 +483,59 @@ class Game extends Phaser.Scene {
 
     save_stats() {
 	try { localStorage.setItem(this.STATS_KEY(), JSON.stringify(this.stats)); } catch (e) {}
+	this.save_stats_remote();   // no-op when signed out
+    }
+
+    // ---- Google sign-in / Firestore sync ----
+    // While signed in, the Firestore document is the source of truth:
+    // every save_stats writes to it, every sign-in pulls it down and
+    // OVERWRITES local. Signing out reverts to the local cache.
+    init_auth() {
+	if (!window.WG_AUTH) return;  // Firebase init failed / placeholder config
+	const A = window.WG_AUTH;
+	A.onAuthStateChanged(A.auth, async (user) => {
+	    const was = this.auth_user;
+	    this.auth_user = user || null;
+	    if (user && (!was || was.uid !== user.uid)) {
+		// Just signed in: pull remote and overwrite local.
+		try {
+		    const snap = await A.getDoc(A.doc(A.db, "stats", user.uid));
+		    const remote = snap.exists() ? snap.data() : null;
+		    this.stats = remote && remote.daily ? remote : this.default_stats();
+		    try { localStorage.setItem(this.STATS_KEY(), JSON.stringify(this.stats)); } catch (e) {}
+		    if (!remote) this.save_stats_remote();   // seed empty doc
+		} catch (e) { console.warn("remote stats fetch failed:", e); }
+	    } else if (!user && was) {
+		// Just signed out: reload whatever is in localStorage.
+		this.stats = this.load_stats();
+	    }
+	    if (this.stats_modal_state) this.refresh_stats_modal();
+	});
+    }
+
+    save_stats_remote() {
+	if (!this.auth_user || !window.WG_AUTH) return;
+	const A = window.WG_AUTH;
+	try { A.setDoc(A.doc(A.db, "stats", this.auth_user.uid), this.stats); } catch (e) {}
+    }
+
+    sign_in_google() {
+	if (!window.WG_AUTH) return;
+	const A = window.WG_AUTH;
+	A.signInWithPopup(A.auth, A.provider).catch(e => console.warn("sign-in failed:", e));
+    }
+
+    sign_out() {
+	if (!window.WG_AUTH) return;
+	const A = window.WG_AUTH;
+	A.signOut(A.auth).catch(e => console.warn("sign-out failed:", e));
+    }
+
+    refresh_stats_modal() {
+	const s = this.stats_modal_state;
+	if (!s) return;
+	if (s.container && !s.container.__closed) s.container.destroy();
+	this.show_stats_modal(s.mode, s.won);
     }
 
     iso_today() {
@@ -955,10 +1009,15 @@ class Game extends Phaser.Scene {
 	    kb.off('keydown-SPACE', close_by_key);
 	    kb.off('keydown-ESC', close_by_key);
 	    this.time.delayedCall(0, () => { this.modal_open = false; });
+	    this.stats_modal_state = null;
 	    container.destroy();
 	};
 	const close_by_key = () => close(true);
 	const close_by_pointer = () => close(false);
+
+	// Track open modal so refresh_stats_modal (called from
+	// onAuthStateChanged) can rebuild it after sign-in / sign-out.
+	this.stats_modal_state = { mode, won, container };
 
 	// Practice-only action buttons, shown when the stats modal pops up
 	// with a finished game: View Ideal Solution + New Puzzle.
@@ -979,6 +1038,35 @@ class Game extends Phaser.Scene {
 	    });
 	    container.add([view_btn.box, view_btn.text, view_btn.zone,
 			   new_btn.box, new_btn.text, new_btn.zone]);
+	} else if (mode === 'daily') {
+	    // Daily stats: bottom-middle bubble for Google sign-in / out.
+	    // While signed in the Firestore stats are the only ones counted.
+	    const btn_y = by + bh - 46;
+	    let label, color;
+	    if (!window.WG_AUTH) {
+		label = "SIGN-IN UNAVAILABLE"; color = COLOR_MUTED;
+	    } else if (this.auth_user) {
+		const who = this.auth_user.displayName || this.auth_user.email || 'Google';
+		label = `SIGN OUT (${who})`; color = COLOR_RED;
+	    } else {
+		label = "SIGN IN WITH GOOGLE"; color = COLOR_GREEN;
+	    }
+	    const auth_btn = this.add_button(WINDOW_WIDTH / 2, btn_y, label,
+					     14, color, 0.5, 0.5, 12, 7);
+	    if (window.WG_AUTH) {
+		auth_btn.zone.on('pointerdown', () => {
+		    if (this.auth_user) this.sign_out();
+		    else this.sign_in_google();
+		});
+	    } else {
+		auth_btn.zone.input.enabled = false;
+	    }
+	    container.add([auth_btn.box, auth_btn.text, auth_btn.zone]);
+	    const tip = this.add.text(WINDOW_WIDTH / 2, by + bh - 18,
+				      "Tap, or press Enter / Space / Esc to close.",
+				      { fontSize: 11, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
+		  .setOrigin(0.5, 0.5).setResolution(RESOLUTION);
+	    container.add(tip);
 	} else {
 	    const tip = this.add.text(WINDOW_WIDTH / 2, by + bh - 22,
 				      "Tap, or press Enter / Space / Esc to close.",
