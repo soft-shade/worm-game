@@ -1,22 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <!--
     Browser-tab icon for Worm Game.
-      - Pink (#f38ba8) "wormy" ring around the outside, drawn as a
-        rounded-cap dashed circle so each segment reads as a tiny
-        capsule, echoing the worms in the in-game stats bars.
-      - Two green (#a6e3a1) letters W and G in a chunky display
-        font. We name Fredoka first (the title font in the stats
-        modal); browsers without it fall back to a friendly
-        rounded-ish system font.
-      - The G sits down-right of the W along a ~30 degree slope
-        (dx 16, dy 9 -> atan = 29.4 degrees).
+      - Pink (#f38ba8) ring around the outside, with dark-grey radial
+        rib bands across it at 30 degree intervals so the ring reads as
+        a worm body wrapping the letters.
+      - Two green (#a6e3a1) letters W and G in a chunky display font
+        (Fredoka with rounded fallbacks for systems that don't have it).
+      - W and G are placed so the line connecting their centres runs
+        through the centre of the ring (32,32) at ~30 degrees down-right
+        (dx 16, dy 9 -> atan = 29.4 degrees), which puts top-left of W
+        and bottom-right of G symmetric about the centre.
   -->
-  <circle cx="32" cy="32" r="27" fill="none" stroke="#f38ba8"
-          stroke-width="6" stroke-dasharray="7 1.6" stroke-linecap="round" />
-  <text x="24" y="26" font-family="Fredoka, 'Comic Sans MS', 'Avenir Next Rounded', sans-serif"
+  <circle cx="32" cy="32" r="27" fill="none" stroke="#f38ba8" stroke-width="6" />
+  <g stroke="#1e1e2e" stroke-width="0.9" stroke-linecap="round" opacity="0.45">
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(15)"  />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(45)"  />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(75)"  />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(105)" />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(135)" />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(165)" />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(195)" />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(225)" />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(255)" />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(285)" />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(315)" />
+    <line x1="0" y1="-30" x2="0" y2="-24" transform="translate(32,32) rotate(345)" />
+  </g>
+  <text x="24" y="27.5" font-family="Fredoka, 'Comic Sans MS', 'Avenir Next Rounded', sans-serif"
         font-weight="700" font-size="26" fill="#a6e3a1"
         text-anchor="middle" dominant-baseline="central">W</text>
-  <text x="40" y="35" font-family="Fredoka, 'Comic Sans MS', 'Avenir Next Rounded', sans-serif"
+  <text x="40" y="36.5" font-family="Fredoka, 'Comic Sans MS', 'Avenir Next Rounded', sans-serif"
         font-weight="700" font-size="26" fill="#a6e3a1"
         text-anchor="middle" dominant-baseline="central">G</text>
 </svg>
