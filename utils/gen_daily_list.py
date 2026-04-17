@@ -18,6 +18,16 @@ END_DATE = dt.date(2026, 12, 31)
 MIN_STEPS = 5
 MAX_STEPS = 12
 
+# Fixed-date overrides, applied after the automatically-generated
+# sequence. Each entry replaces (or adds) the pair for that date even
+# if its ideal chain length is outside [MIN_STEPS, MAX_STEPS].
+OVERRIDES = {
+    # April Fools 2027 — the diameter of the whole word graph (38
+    # steps: spluttered -> ... -> begetting). Meant to be unsolvable
+    # at a glance; a joke puzzle for the day.
+    dt.date(2027, 4, 1): ('spluttered', 'begetting'),
+}
+
 # Brainstormed themed pairs — food, opposites, nature, body, objects, etc.
 CANDIDATES = [
     # Food & drink
@@ -504,14 +514,23 @@ def main():
         output.append((d, a, b, L))
         d += dt.timedelta(days=1)
 
-    print(f"\ndaily list entries: {len(output)}")
+    print(f"\ngenerated entries: {len(output)}")
+
+    # Apply fixed-date overrides: replace any generated entry for an
+    # overridden date, and add standalone entries for dates outside the
+    # generated range. Sort by date before writing.
+    by_date = {d: (a, b) for (d, a, b, _L) in output}
+    for ov_date, (a, b) in OVERRIDES.items():
+        by_date[ov_date] = (a, b)
+    ordered = sorted(by_date.items(), key=lambda kv: kv[0])
+    print(f"\ndaily list entries: {len(ordered)}")
     print("\nfirst 21 entries (3 weeks):")
-    for d, a, b, L in output[:21]:
-        print(f"  {d.strftime('%a %d-%m-%Y')}  {a:>10} -> {b:<10}  ({L} steps)")
+    for d, (a, b) in ordered[:21]:
+        print(f"  {d.strftime('%a %d-%m-%Y')}  {a:>10} -> {b}")
 
     # Write the file: DD-MM-YYYY,start,end
     with open(OUT_PATH, 'w') as f:
-        for d, a, b, L in output:
+        for d, (a, b) in ordered:
             f.write(f"{d.strftime('%d-%m-%Y')},{a},{b}\n")
     print(f"\nwrote {OUT_PATH}")
 
