@@ -22,13 +22,23 @@
       //   match /stats/{uid} { allow read,write: if request.auth.uid == uid; }
       // ---------------------------------------------------------------
       const firebaseConfig = {
-        apiKey:            "REPLACE_ME",
-        authDomain:        "REPLACE_ME.firebaseapp.com",
-        projectId:         "REPLACE_ME",
-        storageBucket:     "REPLACE_ME.appspot.com",
-        messagingSenderId: "REPLACE_ME",
-        appId:             "REPLACE_ME",
-      };
+
+  apiKey: "AIzaSyA2LKtkUF580OX4zBxOB_rw3UfMcUjg5no",
+
+  authDomain: "worm-game-bdd29.firebaseapp.com",
+
+  projectId: "worm-game-bdd29",
+
+  storageBucket: "worm-game-bdd29.firebasestorage.app",
+
+  messagingSenderId: "645517475620",
+
+  appId: "1:645517475620:web:17217da083f0065730bdb1",
+
+  measurementId: "G-6NGQQXZ01X"
+
+};
+
 
       try {
         const app  = initializeApp(firebaseConfig);

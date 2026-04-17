@@ -3,13 +3,13 @@ from operator import itemgetter
 from time import time
 
 alphabet=list('abcdefghijklmnopqrstuvwxyz')
-LW = (open("legal_words.txt").readlines())
+LW = (open("expanded_words.txt").readlines())
 L=LW
 for i in range(len(LW)):
     L[i]=LW[i].strip('\n')
 sortedDict=sorted(L, key=len)
 
-with open("./utils/wordmap.txt","w") as f:
+with open("./wordmap2.txt","w") as f:
 
     graph_dict = {}
     dictn = []
