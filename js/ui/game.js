@@ -183,6 +183,7 @@ class Game extends Phaser.Scene {
 	if (!this.reset || !this.solved) return;
 	const ended = this.game_over();
 	this.set_button_enabled(this.reset, !ended);
+	if (this.restart) this.set_button_enabled(this.restart, this.mode !== 'freeplay');
 
 	if (this.mode === 'freeplay') {
 	    const unlocked = this.daily_ended_today();
@@ -195,14 +196,18 @@ class Game extends Phaser.Scene {
 		this.solved.draw(0.5);
 	    }
 	    this.solved.zone.input.enabled = true;
+	} else if (this.mode === 'practice' && ended) {
+	    // Button is labelled "NEW GAME" here — always active.
+	    this.set_button_enabled(this.solved, true);
 	} else {
+	    // Daily / Practice mid-game: enabled only while game is running.
 	    this.set_button_enabled(this.solved, !ended);
 	}
     }
 
-    // Swap the SOLUTION / GIVE UP button to match the current mode. The
-    // button is destroyed and re-created so the bubble resizes to fit
-    // the new label. The shared click handler branches on this.mode.
+    // Swap the SOLUTION / GIVE UP / NEW GAME button to match the current
+    // mode + whether the practice game has ended. The button is rebuilt
+    // so the bubble resizes to fit the new label.
     update_solution_button() {
 	const APX = 12, APY = 6;
 	if (this.solved) {
@@ -210,8 +215,12 @@ class Game extends Phaser.Scene {
 	    this.solved.box.destroy();
 	    this.solved.zone.destroy();
 	}
-	const label = (this.mode === 'freeplay') ? 'SOLUTION' : 'GIVE UP';
-	this.solved = this.add_button(SOLUTION_X, SOLUTION_Y, label, ACTION_FONTSIZE, COLOR_RED, 1, 0, APX, APY);
+	let label;
+	let color = COLOR_RED;
+	if (this.mode === 'freeplay') label = 'SOLUTION';
+	else if (this.mode === 'practice' && this.game_over()) { label = 'NEW GAME'; color = COLOR_GREEN; }
+	else label = 'GIVE UP';
+	this.solved = this.add_button(SOLUTION_X, SOLUTION_Y, label, ACTION_FONTSIZE, color, 1, 0, APX, APY);
 	this.solved.zone.on('pointerdown', () => this.handle_solution_or_giveup());
     }
 
@@ -224,7 +233,13 @@ class Game extends Phaser.Scene {
 	    this.show_solution();
 	    return;
 	}
-	// Daily / Practice: give up.
+	// Practice, game already over: the button has been swapped to
+	// "NEW GAME" and rolls a fresh puzzle.
+	if (this.mode === 'practice' && this.game_over()) {
+	    this.start_new_practice();
+	    return;
+	}
+	// Daily / Practice mid-game: give up.
 	if (this.game_over()) return;
 	this.give_up();
     }
@@ -239,8 +254,9 @@ class Game extends Phaser.Scene {
 	    this.stats_recorded = true;
 	    this.show_stats_modal(this.mode, false);
 	}
-	this.save_daily_state();
+	this.save_current_state();
 	this.refresh_button_states();
+	this.update_solution_button();
     }
 
     // Update which mode button is highlighted. `mode` is also stored as
@@ -313,6 +329,97 @@ class Game extends Phaser.Scene {
 	const key = this.daily_storage_key();
 	if (!key) return;
 	try { localStorage.removeItem(key); } catch (e) {}
+    }
+
+    // ---- Practice puzzle persistence ----
+    // Same shape as the daily store, but no date stamping: the saved
+    // practice puzzle persists across sessions / windows until the
+    // player solves it, gives up, OR explicitly starts a new puzzle.
+    PRACTICE_KEY() { return 'worm_game_practice'; }
+
+    save_practice_state() {
+	if (this.mode !== 'practice') return;
+	const state = {
+	    start: this.start_word,
+	    goal: this.goal_word.text,
+	    path: this.word_path || [],
+	    words: this.daily_history_words(),
+	    count: this.count,
+	    victory: !!this.VICTORY,
+	    gave_up: !!this.GAVE_UP,
+	    stats_recorded: !!this.stats_recorded,
+	    complaint_counter: this.complaint_counter || 0,
+	};
+	try { localStorage.setItem(this.PRACTICE_KEY(), JSON.stringify(state)); } catch (e) {}
+    }
+
+    load_practice_state() {
+	try {
+	    const raw = localStorage.getItem(this.PRACTICE_KEY());
+	    if (!raw) return null;
+	    const s = JSON.parse(raw);
+	    if (!s || !s.start || !s.goal) return null;
+	    return s;
+	} catch (e) { return null; }
+    }
+
+    clear_practice_state() {
+	try { localStorage.removeItem(this.PRACTICE_KEY()); } catch (e) {}
+    }
+
+    apply_practice_state(s) {
+	this.error_msg.setText("");
+	this.start_word = s.start;
+	this.goal_word.setText(s.goal);
+	this.word_path = s.path && s.path.length ? s.path :
+	    calc_word_path(s.start, s.goal, this.word_array, this.word_graph);
+	this.count = s.count || 0;
+	this.VICTORY = !!s.victory;
+	this.GAVE_UP = !!s.gave_up;
+	this.stats_recorded = !!s.stats_recorded;
+	this.complaint_counter = s.complaint_counter || 0;
+	this.freeplay_stage = FREEPLAY_STAGES["none"];
+	const words = (s.words && s.words.length > 0) ? s.words : [s.start.toUpperCase()];
+	this.current_word = words[words.length - 1];
+	this.prev_word.setText(s.start.toUpperCase());
+	this.word_history.setText("> " + words.join("\n> "));
+	if (this.word_history.displayHeight > HISTORY_BOX_H)
+	    this.word_history.y = HISTORY_BOX_Y + HISTORY_BOX_H - this.word_history.displayHeight;
+	else
+	    this.word_history.y = HISTORY_BOX_Y;
+	if (this.VICTORY) {
+	    this.score_counter.setText(`WIN IN ${this.count}!`);
+	    this.error_msg.setText(`The shortest possible path is ${this.word_path.length - 1} steps.`);
+	} else if (this.GAVE_UP) {
+	    this.score_counter.setText("GAVE UP");
+	    this.error_msg.setText(`One ideal solution was ${this.word_path.length - 1} steps.`);
+	} else {
+	    this.score_counter.setText(String(this.count));
+	}
+	this.refresh_button_states();
+	this.update_solution_button();
+    }
+
+    // Mode-aware save/clear used by the Enter-word handler and reset.
+    save_current_state() {
+	if (this.mode === 'daily') this.save_daily_state();
+	else if (this.mode === 'practice') this.save_practice_state();
+    }
+
+    clear_current_state() {
+	if (this.mode === 'daily') this.clear_daily_state();
+	else if (this.mode === 'practice') this.clear_practice_state();
+    }
+
+    // Tear down the current practice puzzle and roll a fresh one,
+    // persisting the new state immediately.
+    start_new_practice() {
+	this.clear_practice_state();
+	this.mode = 'practice';
+	this.generate_puzzle();
+	this.reset_game_state();
+	this.save_practice_state();
+	this.update_solution_button();
     }
 
     // Apply a previously-saved daily state to the UI in place of a fresh
@@ -540,7 +647,7 @@ class Game extends Phaser.Scene {
 		this.score_counter.setText(complain_string);
 	    }
 	    this.complaint_counter++;
-	    this.save_daily_state();
+	    this.save_current_state();
 
 	    // Normal play
 	} else {
@@ -568,8 +675,9 @@ class Game extends Phaser.Scene {
 		    this.show_stats_modal(this.mode, true);
 		}
 		this.refresh_button_states();
+		this.update_solution_button();
 	    }
-	    this.save_daily_state();
+	    this.save_current_state();
 	}
     }
 
@@ -670,12 +778,18 @@ class Game extends Phaser.Scene {
 	this.reset = this.add_button(RESET_X, RESET_Y, "RESET", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
 	this.reset.zone.on('pointerdown', () => {
 	    if (this.game_over()) return;
-	    if (this.mode === 'daily') this.clear_daily_state();
 	    this.reset_game_state();
+	    this.save_current_state();
 	});
 
-	this.restart = this.add_button(RESTART_X, RESTART_Y, "NEW PUZZLE", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
-	this.restart.zone.on('pointerdown', () => { this.generate_puzzle(); this.set_active_mode('practice'); this.update_solution_button(); this.reset_game_state(); });
+	// Was "NEW PUZZLE"; now opens the stats modal for the current
+	// mode. In free play there are no stats to show, so the button is
+	// visible but disabled.
+	this.restart = this.add_button(RESTART_X, RESTART_Y, "STATISTICS", ACTION_FONTSIZE, COLOR_RED, 0, 0, APX, APY);
+	this.restart.zone.on('pointerdown', () => {
+	    if (this.mode === 'freeplay') return;
+	    this.show_stats_modal(this.mode, !!this.VICTORY);
+	});
 
 	// Solution / Give Up button is owned by update_solution_button so
 	// the label (and size) tracks the current mode.
@@ -833,11 +947,6 @@ class Game extends Phaser.Scene {
 	    items.push(label, bar, count);
 	}
 
-	const tip = this.add.text(WINDOW_WIDTH / 2, by + bh - 22,
-				  "Tap, or press Enter / Space / Esc to close.",
-				  { fontSize: 12, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
-	      .setOrigin(0.5, 0.5).setResolution(RESOLUTION);
-	items.push(tip);
 	container.add(items);
 
 	// Dismissal: click backdrop OR Enter / Space / Escape. Keyboard
@@ -861,6 +970,34 @@ class Game extends Phaser.Scene {
 	};
 	const close_by_key = () => close(true);
 	const close_by_pointer = () => close(false);
+
+	// Practice-only action buttons, shown when the stats modal pops up
+	// with a finished game: View Ideal Solution + New Puzzle.
+	const show_actions = (mode === 'practice' && this.game_over());
+	if (show_actions) {
+	    const btn_y = by + bh - 46;
+	    const view_btn = this.add_button(bx + bw * 0.28, btn_y, "VIEW IDEAL SOLUTION",
+					     14, COLOR_TEXT, 0.5, 0.5, 12, 7);
+	    view_btn.zone.on('pointerdown', () => {
+		this.show_solution();
+		close(false);
+	    });
+	    const new_btn = this.add_button(bx + bw * 0.72, btn_y, "NEW PUZZLE",
+					    14, COLOR_GREEN, 0.5, 0.5, 12, 7);
+	    new_btn.zone.on('pointerdown', () => {
+		close(false);
+		this.start_new_practice();
+	    });
+	    container.add([view_btn.box, view_btn.text, view_btn.zone,
+			   new_btn.box, new_btn.text, new_btn.zone]);
+	} else {
+	    const tip = this.add.text(WINDOW_WIDTH / 2, by + bh - 22,
+				      "Tap, or press Enter / Space / Esc to close.",
+				      { fontSize: 12, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
+		  .setOrigin(0.5, 0.5).setResolution(RESOLUTION);
+	    container.add(tip);
+	}
+
 	this.modal_open = true;
 	kb.on('keydown-ENTER', close_by_key);
 	kb.on('keydown-SPACE', close_by_key);
@@ -916,13 +1053,21 @@ class Game extends Phaser.Scene {
 	const SIDE_FONT = Math.round(WORD_FONTSIZE * 0.9);
 	const SIDE_PAD_X = Math.round(PAD_X * 0.9), SIDE_PAD_Y = Math.round(PAD_Y * 0.9);
 
-	// Practice — endless play with random word pairs
+	// Practice — persists the current puzzle across sessions; tapping
+	// the button simply brings you back to whatever practice game is
+	// currently in progress (or rolls a new one if there isn't one).
 	this.regular = this.add_button(GMODE1_X, GMODE1_Y, "PRACTICE", SIDE_FONT, COLOR_RED, 0, 0, SIDE_PAD_X, SIDE_PAD_Y);
 	this.regular.zone.on('pointerdown', () => {
-	    this.generate_puzzle();
 	    this.set_active_mode('practice');
+	    const saved = this.load_practice_state();
+	    if (saved) {
+		this.apply_practice_state(saved);
+	    } else {
+		this.generate_puzzle();
+		this.reset_game_state();
+		this.save_practice_state();
+	    }
 	    this.update_solution_button();
-	    this.reset_game_state();
 	});
 
 	// Daily puzzle — curated start/goal pair
