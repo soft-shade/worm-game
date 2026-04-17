@@ -7,8 +7,8 @@ class Intro extends Phaser.Scene {
     create() {
 	const base_size = HISTORY_BOX_FONTSIZE;           // 24
 	const worm_size = base_size * 1.44;               // another 20% up from 1.2x
-	const fade_small_ms = 290;                        // SORE..WORD
-	const fade_big_ms = 480;                          // WORM, GAME, PLAY
+	const fade_small_ms = 200;                        // SORE..WORD
+	const fade_big_ms = 350;                          // WORM, GAME, PLAY
 
 	const mk = (text, size) => {
 	    const t = this.add.text(0, 0, text, {
@@ -76,12 +76,12 @@ class Intro extends Phaser.Scene {
 	fade(sore,        500, fade_small_ms);
 	fade(swore,       880, fade_small_ms);
 	fade(sword,      1260, fade_small_ms);
-	fade(word,       1640, fade_small_ms);       // done at 1930
-	fade(worm,       2530, fade_big_ms);          // 0.6s after WORD finishes, done at 3010
-	fade(game_label, 3610, fade_big_ms);          // 0.6s after WORM finishes, done at 4090
+	fade(word,       1640, fade_small_ms);        // done at 1840
+	fade(worm,       2440, fade_big_ms);          // 0.6s after WORD finishes, done at 2790
+	fade(game_label, 3390, fade_big_ms);          // 0.6s after WORM finishes, done at 3740
 	this.tweens.add({
 	    targets: play.container, alpha: 1,
-	    delay: 4690, duration: fade_big_ms, ease: 'Sine.easeInOut',
+	    delay: 4340, duration: fade_big_ms, ease: 'Sine.easeInOut',
 	    onComplete: () => play.zone.setInteractive()
 	});
 
