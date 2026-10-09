@@ -156,6 +156,10 @@ emailer
 emoticon
 emoticons
 endives
+endue
+endued
+endues
+enduing
 erm
 ew
 eww
@@ -163,6 +167,7 @@ fab
 fae
 fam
 fanfic
+fettering
 fibbed
 filename
 firetruck
@@ -187,6 +192,8 @@ frontpage
 funder
 funders
 fundraise
+fuzed
+fuzing
 gadzooks
 gah
 gaslight
