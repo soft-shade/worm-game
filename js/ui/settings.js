@@ -61,3 +61,6 @@ const FREEPLAY_STAGES = {
     first_word: 1,
     second_word: 2
 }
+
+// Where the Support Softshade buttons go.
+const PATREON_URL = 'https://www.patreon.com/c/softshade'

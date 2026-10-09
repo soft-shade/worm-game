@@ -71,6 +71,11 @@ class Intro extends Phaser.Scene {
 	const play = this.make_play_button(play_center_x, play_center_y);
 	play.container.alpha = 0;
 	play.zone.disableInteractive();
+	// Support button beneath PLAY, same style, smaller and red; opens Patreon.
+	const support = this.make_play_button(play_center_x, play_center_y + 66, "♥ SUPPORT SOFTSHADE", COLOR_RED, ACTION_FONTSIZE);
+	support.container.alpha = 0;
+	support.zone.disableInteractive();
+	support.zone.on('pointerdown', () => { window.open(PATREON_URL, '_blank', 'noopener'); });
 
 	// Fade-in schedule (ms). Words are 380ms apart, WORM/GAME use 600ms
 	// gaps to the preceding word, and the play button appears 600ms
@@ -90,6 +95,11 @@ class Intro extends Phaser.Scene {
 	    delay: 3875, duration: fade_big_ms, ease: 'Sine.easeInOut',
 	    onComplete: () => play.zone.setInteractive()
 	});
+	this.tweens.add({
+	    targets: support.container, alpha: 1,
+	    delay: 4100, duration: fade_big_ms, ease: 'Sine.easeInOut',
+	    onComplete: () => support.zone.setInteractive()
+	});
 
 	// Play click → 0.38s fade out to background, then start game.
 	play.zone.on('pointerdown', () => {
@@ -108,10 +118,8 @@ class Intro extends Phaser.Scene {
     // COLOR_BOX_FILL fill, drop shadow. Returns {container, text, zone}.
     // The container holds the shadow/fill/outline and text for easy
     // fade-in via container.alpha; zone is a separate interactive.
-    make_play_button(cx, cy) {
-	const fontsize = WORD_FONTSIZE;
+    make_play_button(cx, cy, text_str = "PLAY", color = COLOR_GREEN, fontsize = WORD_FONTSIZE) {
 	const pad_x = 22, pad_y = 12;
-	const text_str = "PLAY";
 
 	const probe = this.add.text(0, 0, text_str, {
 	    fontSize: fontsize, fontFamily: "'Inter', sans-serif"
@@ -138,7 +146,7 @@ class Intro extends Phaser.Scene {
 	draw(0.5);
 
 	const text = this.add.text(bx + pad_x, by + pad_y, text_str, {
-	    fontSize: fontsize, fontFamily: "'Inter', sans-serif", color: COLOR_GREEN
+	    fontSize: fontsize, fontFamily: "'Inter', sans-serif", color: color
 	}).setResolution(RESOLUTION).setOrigin(0, 0);
 
 	const container = this.add.container(0, 0);

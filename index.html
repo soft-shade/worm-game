@@ -174,6 +174,13 @@
       #wg-rules dd { margin: 0 0 6px; }
       #wg-rules dd:last-of-type { margin-bottom: 0; }
       #wg-rules p:last-child { margin-bottom: 0; }
+      #wg-rules .wg-support { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+      #wg-rules .wg-support-btn {
+        display: inline-block; padding: 6px 14px; border-radius: 8px;
+        background: #f38ba8; color: #1e1e2e; font-weight: 600; text-decoration: none;
+        box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.5);
+      }
+      #wg-rules .wg-support-btn:hover { background: #f5a3ba; }
       #wg-rules .wg-rules-close {
         position: absolute;
         top: 0; right: 0;
@@ -225,6 +232,8 @@
                 <dt>Free play</dt>
                 <dd>Pick your own start and goal words.</dd>
               </dl>
+              <p class="wg-support">Worm Game is free and ad-free.
+                <a class="wg-support-btn" href="https://www.patreon.com/c/softshade" target="_blank" rel="noopener">&hearts; Support Softshade on Patreon</a></p>
               <p>Press X to close.</p>
             </div>
           </div>
@@ -233,7 +242,7 @@
              every deploy must bump WG_VER so returning visitors get
              the new JS instead of a stale cached copy. The CDN
              scripts above (Phaser, Firebase, gtag) version themselves. -->
-        <script>window.WG_VER = '20261009j';</script>
+        <script>window.WG_VER = '20261010a';</script>
         <script>
           document.write(
             ['js/boot.js',
