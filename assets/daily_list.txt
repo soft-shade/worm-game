@@ -348,7 +348,7 @@
 29-03-2027,soul,mind
 30-03-2027,call,text
 31-03-2027,rain,snow
-01-04-2027,spluttered,begetting
+01-04-2027,spluttered,wanderings
 02-04-2027,cook,chef
 03-04-2027,crow,raven
 04-04-2027,plane,train
