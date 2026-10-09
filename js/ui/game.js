@@ -2045,11 +2045,13 @@ class Game extends Phaser.Scene {
 	    container.add([view_btn.box, view_btn.text, view_btn.zone,
 			   new_btn.box, new_btn.text, new_btn.zone]);
 	} else if (tab === 'daily') {
-	    // Share button (if today's daily ended) + Google sign-in bubble.
+	    // Footer row, centred as a group: SHARE (once today's daily has
+	    // ended), SUPPORT SOFTSHADE (Patreon), then the Google sign-in bubble.
 	    const daily_done = this.daily_ended_today();
+	    const btn_y = by + bh - 46;
+	    const row = [];
 	    if (daily_done) {
-		const share_btn = this.add_button(bx + bw * 0.28, by + bh - 46, "SHARE",
-						  14, COLOR_GREEN, 0.5, 0.5, 14, 7);
+		const share_btn = this.add_button(0, btn_y, "SHARE", 14, COLOR_GREEN, 0.5, 0.5, 14, 7);
 		share_btn.zone.on('pointerdown', async () => {
 		    const ok = await this.share_result();
 		    share_btn.text.setText(ok ? "COPIED!" : "COPY FAILED");
@@ -2058,9 +2060,13 @@ class Game extends Phaser.Scene {
 		    });
 		});
 		container.add([share_btn.box, share_btn.text, share_btn.zone]);
+		row.push(share_btn);
 	    }
-	    const btn_y = by + bh - 46;
-	    const auth_x = daily_done ? bx + bw * 0.72 : WINDOW_WIDTH / 2;
+	    const support_btn = this.add_button(0, btn_y, "\u2665 SUPPORT SOFTSHADE", 14, COLOR_RED, 0.5, 0.5, 12, 7);
+	    support_btn.zone.on('pointerdown', () => { window.open(PATREON_URL, '_blank', 'noopener'); });
+	    container.add([support_btn.box, support_btn.text, support_btn.zone]);
+	    row.push(support_btn);
+	    const auth_x = 0;
 	    let label, color;
 	    if (!window.WG_AUTH) {
 		label = "SIGN-IN UNAVAILABLE"; color = COLOR_MUTED;
@@ -2080,6 +2086,16 @@ class Game extends Phaser.Scene {
 		auth_btn.zone.input.enabled = false;
 	    }
 	    container.add([auth_btn.box, auth_btn.text, auth_btn.zone]);
+	    row.push(auth_btn);
+	    // Lay the row out left to right with even gaps, centred in the modal.
+	    const gap = 12;
+	    const total = row.reduce((sum, b) => sum + b.zone.width, 0) + gap * (row.length - 1);
+	    let x = bx + (bw - total) / 2;
+	    for (const b of row) {
+		const dx = x - b.zone.x;
+		for (const part of [b.box, b.text, b.zone]) part.x += dx;
+		x += b.zone.width + gap;
+	    }
 	    const tip = this.add.text(WINDOW_WIDTH / 2, by + bh - 18,
 				      "Press X, Enter, Space, or Esc to close.",
 				      { fontSize: 11, fontFamily: "'Inter', sans-serif", color: COLOR_MUTED })
