@@ -101743,7 +101743,6 @@ nevi
 nevoid
 nevus
 new
-newb
 newbie
 newbies
 newborn
